@@ -7,5 +7,5 @@ type DBService interface {
 type DBServiceMock struct{}
 
 func (db *DBServiceMock) GetMacs(productId string) ([]string, error) {
-	return []string{"00:00:00:00:00:01", "00:00:00:00:00:02"}, nil
+	return []string{"000000000001", "000000000002"}, nil
 }

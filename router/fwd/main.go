@@ -97,12 +97,13 @@ func main() {
 	log.Println("Starting FWD router...")
 	for d := range msgs {
 		go func() {
+			ctx := context.Background()
 			var m models.RoutingMessage
 			err := json.Unmarshal(d.Body, &m)
 			if err != nil {
 				log.Printf("Error unmarshalling task: %s", err)
 			}
-			err = sharedMemService.Save(m.DeviceMac, d.ReplyTo)
+			err = sharedMemService.Save(ctx, m.DeviceMac, d.ReplyTo)
 			if err != nil {
 				log.Printf("Error saving to shared memory: %s", err)
 			}

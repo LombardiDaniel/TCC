@@ -15,7 +15,7 @@ type RoutingMessage struct {
 }
 
 func (m RoutingMessage) Dump() []byte {
-	panic("not impl")
+	panic("not impl") // TODO: stuck here
 }
 
 type RoutingReply struct {

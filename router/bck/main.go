@@ -73,8 +73,9 @@ func main() {
 		if err != nil {
 			return
 		}
+		ctx := context.Background()
 		// fmt.Printf("* [%s] %v\n", msg.Topic(), rep)
-		k, err := sharedMemService.RepKey(rep.DeviceMac)
+		k, err := sharedMemService.RepKey(ctx, rep.DeviceMac)
 		if err != nil {
 			return
 		}

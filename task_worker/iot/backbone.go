@@ -8,6 +8,9 @@ import (
 )
 
 type Backbone interface {
+	// Execute executes the task and returns an error if it fails.
+	// It holds business logic and is has access to the MessagingService.Forward()
+	// method, it handles all async logic.
 	Execute(task models.Task) error
 }
 
