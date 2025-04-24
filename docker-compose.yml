@@ -30,6 +30,8 @@ services:
       - rbmq
       - redis
       - mqtt
+    deploy:
+      replicas: 3
 
   router_bck:
     build:
@@ -44,6 +46,8 @@ services:
       - redis
       - mqtt
     command: ./bck
+    deploy:
+      replicas: 3
 
   router_fwd:
     build:
@@ -58,3 +62,5 @@ services:
       - redis
       - mqtt
     command: ./fwd
+    deploy:
+      replicas: 3

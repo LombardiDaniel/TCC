@@ -18,3 +18,5 @@ This creates a decoupled system that does not need a long-lived connection betwe
 Different levels of Async and Sync communication are common pitfals for scalability, where a single service may be needed to avoid resource locks and such. With this architecture, the TaskWorker (where business logic reside) is purelly synchronous. This allows for more reliable development and testing.
 
 In a regular architecture, the Router would not be able to scale horizontally, because a reply from MQTT (round-robin) may fall on a different node, one that did not make the request, making it unable to ack the request (made by the worker).
+
+Check out the [docker-compose.yml](/docker-compose.yml)! Note that all of our services have multiple replicas and the requests still work out.
