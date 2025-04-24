@@ -1,0 +1,60 @@
+services:
+  rbmq:
+    image: rabbitmq:3-management
+    ports:
+      - 15672:15672 # RabbitMQ Management UI
+      - 5672:5672 # RabbitMQ AMQP protocol
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+
+  mqtt:
+    image: eclipse-mosquitto:latest
+    ports:
+      - 1883:1883
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_HOST: rbmq
+      REDIS_HOST: redis
+      MQTT_HOST: mqtt
+    depends_on:
+      - rbmq
+      - redis
+      - mqtt
+
+  router_bck:
+    build:
+      context: router
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_HOST: rbmq
+      REDIS_HOST: redis
+      MQTT_HOST: mqtt
+    depends_on:
+      - rbmq
+      - redis
+      - mqtt
+    command: ./bck
+
+  router_fwd:
+    build:
+      context: worker
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_HOST: rbmq
+      REDIS_HOST: redis
+      MQTT_HOST: mqtt
+    depends_on:
+      - rbmq
+      - redis
+      - mqtt
+    command: ./fwd
