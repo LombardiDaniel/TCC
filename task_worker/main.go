@@ -3,16 +3,13 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/lombardidaniel/tcc/worker/iot"
 	"github.com/lombardidaniel/tcc/worker/models"
 	"github.com/lombardidaniel/tcc/worker/services"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-)
-
-const (
-	numGoroutines = 5
 )
 
 var (
@@ -24,17 +21,15 @@ var (
 )
 
 func init() {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	conn, err := amqp.Dial("amqp://guest:guest@rbmq:5672/")
 	if err != nil {
 		panic(err)
 	}
-	defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
 		panic(err)
 	}
-	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
 		"task_queue", // name
@@ -51,7 +46,7 @@ func init() {
 	msgs, err = ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		false,  // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
@@ -60,9 +55,26 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	messagingService = services.NewMessagingServiceImpl(ch)
+
+	iotBackbone = iot.NewBackboneImpl(
+		&services.DBServiceMock{},
+		messagingService,
+	)
 }
 
-func consume() {
+func main() {
+	log.Println("Starting task_worker...")
+	ex := models.Task{
+		Action:        "test",
+		TransactionId: "1234567890",
+		ProductId:     "1234567890",
+		Ts:            time.Now(),
+	}
+	j, _ := json.Marshal(ex)
+	log.Printf("Example task:\n%s", j)
+
 	for d := range msgs {
 		var task models.Task
 		err := json.Unmarshal(d.Body, &task)
@@ -74,23 +86,17 @@ func consume() {
 			}
 			continue
 		}
+
+		log.Printf("Received transaction: %s", task.TransactionId)
+		err = iotBackbone.Execute(task)
+		if err != nil {
+			log.Printf("Could not execute transaction: %s", task.TransactionId)
+			continue
+		}
+
 		err = d.Acknowledger.Ack(d.DeliveryTag, false)
 		if err != nil {
 			panic(err)
 		}
-
-		err = iotBackbone.Execute(task)
-		if err != nil {
-			panic(err)
-		}
 	}
-}
-
-func main() {
-	for range numGoroutines {
-		go consume()
-	}
-
-	forever := make(chan struct{})
-	<-forever
 }

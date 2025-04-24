@@ -42,17 +42,15 @@ func init() {
 	}
 	fmt.Println("Connected to MQTT broker")
 
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	conn, err := amqp.Dial("amqp://guest:guest@rbmq:5672/")
 	if err != nil {
 		panic(err)
 	}
-	defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
 		panic(err)
 	}
-	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
 		"routing", // name
@@ -96,6 +94,7 @@ func init() {
 }
 
 func main() {
+	log.Println("Starting FWD router...")
 	for d := range msgs {
 		go func() {
 			var m models.RoutingMessage

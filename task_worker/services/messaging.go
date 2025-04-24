@@ -21,6 +21,12 @@ type MessagingServiceImpl struct {
 	ch *amqp.Channel
 }
 
+func NewMessagingServiceImpl(ch *amqp.Channel) MessagingService {
+	return &MessagingServiceImpl{
+		ch: ch,
+	}
+}
+
 func (s *MessagingServiceImpl) Forward(msgs []models.RoutingMessage) ([]models.RoutingReply, error) {
 	// Ephemeral queue is declared
 	q, err := s.ch.QueueDeclare(

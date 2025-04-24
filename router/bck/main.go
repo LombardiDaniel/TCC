@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/lombardidaniel/tcc/router/pkg/models"
@@ -38,11 +39,10 @@ func init() {
 	}
 	fmt.Println("Connected to MQTT broker")
 
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	conn, err := amqp.Dial("amqp://guest:guest@rbmq:5672/")
 	if err != nil {
 		panic(err)
 	}
-	defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
@@ -85,6 +85,7 @@ func main() {
 		}
 	})
 
+	log.Println("Starting BCK router...")
 	forever := make(chan struct{})
 	<-forever
 }

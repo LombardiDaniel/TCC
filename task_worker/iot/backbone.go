@@ -5,8 +5,6 @@ import (
 
 	"github.com/lombardidaniel/tcc/worker/models"
 	"github.com/lombardidaniel/tcc/worker/services"
-
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Backbone interface {
@@ -14,14 +12,12 @@ type Backbone interface {
 }
 
 type BackboneImpl struct {
-	ch               *amqp.Channel
 	dbService        services.DBService
 	messagingService services.MessagingService
 }
 
-func NewBackboneImpl(ch *amqp.Channel, dbService services.DBService, messagingService services.MessagingService) Backbone {
+func NewBackboneImpl(dbService services.DBService, messagingService services.MessagingService) Backbone {
 	return &BackboneImpl{
-		ch:               ch,
 		dbService:        dbService,
 		messagingService: messagingService,
 	}

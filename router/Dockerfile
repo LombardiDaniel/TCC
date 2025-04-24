@@ -9,14 +9,13 @@ RUN go mod download
 
 COPY ./ ./
 
-RUN go build -o bin/bck ./bck && \
-    go build -o bin/fwd ./fwd
-
+RUN go build -o /bin/bck ./bck && \
+    go build -o /bin/fwd ./fwd
 
 #### - SERVER - ####
 FROM alpine:3.21.3 AS server
 
-RUN apk add --no-cache gcompat=1.1.0-r4 libstdc++=13.2.1_git20231014-r0
+RUN apk add --no-cache gcompat libstdc++
 
 WORKDIR /app
 
