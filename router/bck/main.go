@@ -65,8 +65,10 @@ func init() {
 }
 
 func main() {
-	responseTopic := "/gw/+/response"
-	mqttClient.Subscribe(responseTopic, 0, func(client mqtt.Client, msg mqtt.Message) {
+	responseTopic := "/gw/+/response" // topic: "/gw/ANY_GW_MAC/response"
+
+	// "$share/GROUP_NAME/" enables sharing (round-robin) in messages for MQTT
+	mqttClient.Subscribe("$share/bck-group/"+responseTopic, 0, func(client mqtt.Client, msg mqtt.Message) {
 		rep, err := models.RoutingReply{}.FromMqtt(msg.Payload())
 		if err != nil {
 			return
