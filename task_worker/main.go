@@ -73,7 +73,7 @@ func main() {
 		Ts:            time.Now(),
 	}
 	j, _ := json.Marshal(ex)
-	log.Printf("Example task:\n%s", j)
+	log.Printf("Example task: %s\n", j)
 
 	for d := range msgs {
 		var task models.Task
@@ -98,5 +98,6 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		log.Printf("Transaction %s executed successfully", task.TransactionId)
 	}
 }

@@ -1,6 +1,7 @@
 package iot
 
 import (
+	"errors"
 	"log"
 
 	"github.com/lombardidaniel/tcc/worker/models"
@@ -53,6 +54,11 @@ func (b *BackboneImpl) Execute(task models.Task) error {
 
 	for _, rep := range reps {
 		log.Printf("Received ACK from: %s\n", rep.DeviceMac)
+	}
+
+	if len(reps) != len(macs) {
+		log.Printf("Expected %d replies, got %d\n", len(macs), len(reps))
+		return errors.New("not all devices replied")
 	}
 
 	return nil

@@ -34,5 +34,5 @@ func (s *SharedMemoryServiceImpl) Save(ctx context.Context, deviceMac string, re
 }
 
 func (s *SharedMemoryServiceImpl) RepKey(ctx context.Context, deviceMac string) (string, error) {
-	panic("not implemented")
+	return s.client.Get(ctx, deviceMac).Result()
 }

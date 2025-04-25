@@ -3,7 +3,8 @@ package services
 import (
 	"github.com/lombardidaniel/tcc/router/pkg/models"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	// mqtt "github.com/eclipse/paho.mqtt.golang"
+	mqtt "github.com/eclipse/paho.golang/autopaho"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -42,11 +43,11 @@ func (s *MessagingServiceImpl) Forward(topic string, msg models.RoutingMessage) 
 }
 
 func (s *MessagingServiceImpl) Reply(routingKey string, msg models.RoutingReply) error {
-	q, err := s.ch.QueueDeclare(
+	q, err := s.ch.QueueDeclarePassive(
 		routingKey, // name
 		false,      // durable
 		true,       // delete when unused
-		true,       // exclusive
+		false,      // exclusive
 		false,      // no-wait
 		nil,        // arguments
 	)

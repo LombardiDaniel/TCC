@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/lombardidaniel/tcc/router/pkg/models"
 	"github.com/lombardidaniel/tcc/router/pkg/services"
@@ -25,18 +26,15 @@ var (
 )
 
 func init() {
-	broker := "tcp://broker.hivemq.com:1883" // Replace with your broker URL
+	broker := "tcp://mqtt:1883" // Replace with your broker URL
 	clientID := "fwd"
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(broker)
 	opts.SetClientID(clientID)
-	opts.SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
-		fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
-	})
 
 	mqttClient = mqtt.NewClient(opts)
-	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+	if token := mqttClient.Connect(); token.WaitTimeout(10*time.Second) && token.Error() != nil {
 		fmt.Printf("Error connecting to broker: %v\n", token.Error())
 		os.Exit(1)
 	}
@@ -108,11 +106,14 @@ func main() {
 				log.Printf("Error saving to shared memory: %s", err)
 			}
 
+			fmt.Printf("Saved to shared memory: %s: %s", m.DeviceMac, d.ReplyTo)
+
 			t, _ := dbService.GetRoute(m.DeviceMac)
 			err = messagingService.Forward(t, m)
 			if err != nil {
 				fmt.Printf("Error forwarding message: %s", err)
 			}
+			fmt.Printf("Message forwarded to topic: %s: %s", t, m.DeviceMac)
 		}()
 	}
 }

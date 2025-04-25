@@ -11,9 +11,10 @@ services:
     #   RABBITMQ_DEFAULT_PASS: password
     healthcheck:
       test: rabbitmq-diagnostics -q ping
-      interval: 30s
+      interval: 5s
       timeout: 30s
       retries: 3
+    attach: false
 
   redis:
     image: redis:latest
@@ -23,9 +24,10 @@ services:
       - 6379
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
+      interval: 5s
       timeout: 30s
       retries: 3
+    attach: false
 
   mqtt:
     image: eclipse-mosquitto:1.6.15
@@ -33,6 +35,14 @@ services:
       - 1883:1883
     expose:
       - 1883
+    attach: false
+
+  mqtt_monitor:
+    image: eclipse-mosquitto:1.6.15
+    command: mosquitto_sub -h mqtt -t '#'
+    restart: always
+    depends_on:
+      - mqtt
 
   task_worker:
     build:
@@ -51,6 +61,7 @@ services:
         condition: service_started
     deploy:
       replicas: 1
+    restart: always
 
   router_fwd:
     build:
@@ -69,23 +80,25 @@ services:
         condition: service_started
     command: ./fwd
     deploy:
-      replicas: 1
+      replicas: 2
+    restart: always
 
-  # router_bck:
-  #   build:
-  #     context: router
-  #     dockerfile: Dockerfile
-  #   environment:
-  #     RABBITMQ_HOST: rbmq
-  #     REDIS_HOST: redis
-  #     MQTT_HOST: mqtt
-  #   depends_on:
-  #     rbmq:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #     mqtt:
-  #       condition: service_started
-  #   command: ./bck
-  #   deploy:
-  #     replicas: 1
+  router_bck:
+    build:
+      context: router
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_HOST: rbmq
+      REDIS_HOST: redis
+      MQTT_HOST: mqtt
+    depends_on:
+      rbmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    command: ./bck
+    deploy:
+      replicas: 2
+    restart: always

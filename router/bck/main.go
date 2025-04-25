@@ -5,17 +5,19 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/lombardidaniel/tcc/router/pkg/models"
 	"github.com/lombardidaniel/tcc/router/pkg/services"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	// mqtt "github.com/eclipse/paho.mqtt.golang"
+	mqtt "github.com/eclipse/paho.golang/autopaho"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 )
 
 var (
-	mqttClient mqtt.Client
+	mqttClient mqtt.ClientConfig
 
 	messagingService services.MessagingService
 	sharedMemService services.SharedMemoryService
@@ -28,12 +30,9 @@ func init() {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(broker)
 	opts.SetClientID(clientID)
-	opts.SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
-		fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
-	})
 
 	mqttClient = mqtt.NewClient(opts)
-	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+	if token := mqttClient.Connect(); token.WaitTimeout(10*time.Second) && token.Error() != nil {
 		fmt.Printf("Error connecting to broker: %v\n", token.Error())
 		os.Exit(1)
 	}
@@ -65,10 +64,14 @@ func init() {
 }
 
 func main() {
+	log.Print("docker run -ti --network tcc_default eclipse-mosquitto:1.6.15 ash")
+	log.Print("Example rep: `mosquitto_pub -h mqtt -t /gw/GW_MAC/response -m {\\\"deviceMac\\\":\\\"000000000001\\\",\\\"ack\\\":true}`")
+
 	responseTopic := "/gw/+/response" // topic: "/gw/ANY_GW_MAC/response"
 
 	// "$share/GROUP_NAME/" enables sharing (round-robin) in messages for MQTT
-	mqttClient.Subscribe("$share/bck-group/"+responseTopic, 0, func(client mqtt.Client, msg mqtt.Message) {
+	mqttClient.Subscribe("$share/router-bck-group/"+responseTopic, 0, func(client mqtt.Client, msg mqtt.Message) {
+		log.Println("msg rcvd")
 		rep, err := models.RoutingReply{}.FromMqtt(msg.Payload())
 		if err != nil {
 			return

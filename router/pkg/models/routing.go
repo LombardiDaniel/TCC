@@ -1,5 +1,7 @@
 package models
 
+import "encoding/json"
+
 type RequestType int
 
 const (
@@ -8,25 +10,31 @@ const (
 )
 
 type RoutingMessage struct {
-	DeviceMac string // net.HardwareAddr
-
-	Type   RequestType
-	Fields map[string]string
+	DeviceMac string            `json:"deviceMac"` // net.HardwareAddr
+	Type      RequestType       `json:"type"`
+	Fields    map[string]string `json:"fields"`
 }
 
 func (m RoutingMessage) Dump() []byte {
-	panic("not impl") // TODO: stuck here
+	jsonData, _ := json.Marshal(m)
+	return jsonData
 }
 
 type RoutingReply struct {
-	DeviceMac string // net.HardwareAddr
-	Ack       bool
+	DeviceMac string `json:"deviceMac"` // net.HardwareAddr
+	Ack       bool   `json:"ack"`
 }
 
 func (m RoutingReply) Dump() []byte {
-	panic("not impl")
+	jsonData, _ := json.Marshal(m)
+	return jsonData
 }
 
 func (m RoutingReply) FromMqtt(payload []byte) (RoutingReply, error) {
-	panic("not impl")
+	var reply RoutingReply
+	err := json.Unmarshal(payload, &reply)
+	if err != nil {
+		return RoutingReply{}, err
+	}
+	return reply, nil
 }
