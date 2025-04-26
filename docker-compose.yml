@@ -100,5 +100,5 @@ services:
         condition: service_started
     command: ./bck
     deploy:
-      replicas: 2
+      replicas: 1
     restart: always

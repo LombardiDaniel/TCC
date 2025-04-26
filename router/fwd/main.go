@@ -86,7 +86,7 @@ func init() {
 		panic(err)
 	}
 
-	messagingService = services.NewMessagingService(ch, mqttClient)
+	messagingService = services.NewMessagingService(ch, &mqttClient)
 	sharedMemService = services.NewSharedMemoryService(redisClient)
 	dbService = &services.DBServiceMock{}
 }

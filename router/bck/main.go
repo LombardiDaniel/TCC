@@ -4,39 +4,82 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
+	"net/url"
 	"time"
 
 	"github.com/lombardidaniel/tcc/router/pkg/models"
 	"github.com/lombardidaniel/tcc/router/pkg/services"
 
-	// mqtt "github.com/eclipse/paho.mqtt.golang"
 	mqtt "github.com/eclipse/paho.golang/autopaho"
+	"github.com/eclipse/paho.golang/paho"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 )
 
 var (
-	mqttClient mqtt.ClientConfig
+	err error
+
+	mqttManager *mqtt.ConnectionManager
 
 	messagingService services.MessagingService
 	sharedMemService services.SharedMemoryService
 )
 
+func onMsgCallback(payload []byte) error {
+	log.Println("msg rcvd")
+	rep, err := models.RoutingReply{}.FromMqtt(payload)
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+	// fmt.Printf("* [%s] %v\n", msg.Topic(), rep)
+	k, err := sharedMemService.RepKey(ctx, rep.DeviceMac)
+	if err != nil {
+		return err
+	}
+
+	err = messagingService.Reply(k, rep)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func init() {
-	broker := "tcp://mqtt:1883"
+	broker, _ := url.Parse("tcp://mqtt:1883")
 	clientID := "bck"
 
-	opts := mqtt.NewClientOptions()
-	opts.AddBroker(broker)
-	opts.SetClientID(clientID)
-
-	mqttClient = mqtt.NewClient(opts)
-	if token := mqttClient.Connect(); token.WaitTimeout(10*time.Second) && token.Error() != nil {
-		fmt.Printf("Error connecting to broker: %v\n", token.Error())
-		os.Exit(1)
+	responseTopic := "/gw/+/response"
+	cfg := mqtt.ClientConfig{
+		BrokerUrls:        []*url.URL{broker},
+		KeepAlive:         30,
+		ConnectRetryDelay: 5 * time.Second,
+		OnConnectionUp: func(cm *mqtt.ConnectionManager, ca *paho.Connack) {
+			fmt.Println("Connected to MQTT broker")
+			cm.Subscribe(context.Background(), &paho.Subscribe{
+				Subscriptions: []paho.SubscribeOptions{{
+					Topic: "$share/router-bck-group/" + responseTopic,
+					QoS:   byte(0),
+				}},
+			})
+		},
+		OnConnectError: func(err error) {
+			fmt.Printf("Error connecting to broker: %v\n", err)
+		},
+		ClientConfig: paho.ClientConfig{
+			ClientID: clientID,
+			OnPublishReceived: []func(paho.PublishReceived) (bool, error){
+				func(pr paho.PublishReceived) (bool, error) {
+					return true, onMsgCallback(pr.Packet.Payload)
+				},
+			},
+		},
 	}
-	fmt.Println("Connected to MQTT broker")
+	mqttManager, err = mqtt.NewConnection(context.Background(), cfg)
+	if err != nil {
+		panic(err)
+	}
 
 	conn, err := amqp.Dial("amqp://guest:guest@rbmq:5672/")
 	if err != nil {
@@ -59,35 +102,13 @@ func init() {
 		panic(err)
 	}
 
-	messagingService = services.NewMessagingService(ch, mqttClient)
+	messagingService = services.NewMessagingService(ch, nil)
 	sharedMemService = services.NewSharedMemoryService(redisClient)
 }
 
 func main() {
 	log.Print("docker run -ti --network tcc_default eclipse-mosquitto:1.6.15 ash")
 	log.Print("Example rep: `mosquitto_pub -h mqtt -t /gw/GW_MAC/response -m {\\\"deviceMac\\\":\\\"000000000001\\\",\\\"ack\\\":true}`")
-
-	responseTopic := "/gw/+/response" // topic: "/gw/ANY_GW_MAC/response"
-
-	// "$share/GROUP_NAME/" enables sharing (round-robin) in messages for MQTT
-	mqttClient.Subscribe("$share/router-bck-group/"+responseTopic, 0, func(client mqtt.Client, msg mqtt.Message) {
-		log.Println("msg rcvd")
-		rep, err := models.RoutingReply{}.FromMqtt(msg.Payload())
-		if err != nil {
-			return
-		}
-		ctx := context.Background()
-		// fmt.Printf("* [%s] %v\n", msg.Topic(), rep)
-		k, err := sharedMemService.RepKey(ctx, rep.DeviceMac)
-		if err != nil {
-			return
-		}
-
-		err = messagingService.Reply(k, rep)
-		if err != nil {
-			return
-		}
-	})
 
 	log.Println("Starting BCK router...")
 	forever := make(chan struct{})

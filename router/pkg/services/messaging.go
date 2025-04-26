@@ -3,8 +3,8 @@ package services
 import (
 	"github.com/lombardidaniel/tcc/router/pkg/models"
 
-	// mqtt "github.com/eclipse/paho.mqtt.golang"
-	mqtt "github.com/eclipse/paho.golang/autopaho"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	// mqtt "github.com/eclipse/paho.golang/autopaho"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -21,10 +21,11 @@ type MessagingService interface {
 
 type MessagingServiceImpl struct {
 	ch         *amqp.Channel
-	mqttClient mqtt.Client
+	mqttClient *mqtt.Client
 }
 
-func NewMessagingService(ch *amqp.Channel, mqttClient mqtt.Client) MessagingService {
+func NewMessagingService(ch *amqp.Channel, mqttClient *mqtt.Client) MessagingService {
+
 	return &MessagingServiceImpl{
 		ch:         ch,
 		mqttClient: mqttClient,
@@ -32,7 +33,7 @@ func NewMessagingService(ch *amqp.Channel, mqttClient mqtt.Client) MessagingServ
 }
 
 func (s *MessagingServiceImpl) Forward(topic string, msg models.RoutingMessage) error {
-	token := s.mqttClient.Publish(
+	token := (*s.mqttClient).Publish(
 		topic,
 		1,
 		true,
