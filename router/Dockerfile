@@ -19,8 +19,8 @@ RUN apk add --no-cache gcompat libstdc++
 
 WORKDIR /app
 
-COPY --from=builder /bin/bck ./bck
-COPY --from=builder /bin/fwd ./fwd
+COPY --from=builder /bin/bck ./cmd/bck
+COPY --from=builder /bin/fwd ./cmd/fwd
 
 RUN adduser --system --no-create-home nonroot
 USER nonroot
