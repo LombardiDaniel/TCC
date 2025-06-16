@@ -2,6 +2,8 @@
 
 [article] POURMAJID, W. et al. (2017). On Challenges of Cloud Monitoring. Proceedings of the 27th Annual International Conference on Computer Science and Software Engineering
 
+[article] Walter L. Heimerdinger and Charles B. Weinstock: “A Conceptual Framework for System Fault Tolerance,” Technical Report CMU/SEI-92-TR-033, Software Engineering Institute, Carnegie Mellon University, October 1992.
+
 [booklet] MOTTA, Rebeca; OLIVEIRA, Káthia; TRAVASSOS,
 Guilherme. IoT Roadmap: Support for Internet of Things Software Systems
 Engineering. arXiv preprint arXiv:2103.04969, 2021. https://arxiv.org/ftp/arxiv/papers/2103/2103.04969.pdf
