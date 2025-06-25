@@ -23,3 +23,5 @@ MSR-TR-95-56, December 1995.
 [book] KLEPPMANN, Martin. Designing Data-Intensive Applications. Sebastopol, CA: O'Reilly Media, Inc., 2017.
 
 [book] M. van Steen and A.S. Tanenbaum, Distributed Systems, 4th ed., distributed-systems.net, 2023.
+
+[presentation] Raffi Krikorian: “Timelines at Scale,” at QCon San Francisco, November 2012. Available at: https://www.infoq.com/presentations/Twitter-Timeline-Scalability/
