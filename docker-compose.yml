@@ -46,7 +46,7 @@ services:
 
   task_worker:
     build:
-      context: task_worker
+      context: src/task_worker
       dockerfile: Dockerfile
     environment:
       RABBITMQ_HOST: rbmq
@@ -65,7 +65,7 @@ services:
 
   router_fwd:
     build:
-      context: router
+      context: src/router
       dockerfile: Dockerfile
     environment:
       RABBITMQ_HOST: rbmq
@@ -85,7 +85,7 @@ services:
 
   router_bck:
     build:
-      context: router
+      context: src/router
       dockerfile: Dockerfile
     environment:
       RABBITMQ_HOST: rbmq

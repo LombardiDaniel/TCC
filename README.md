@@ -19,4 +19,30 @@ Different levels of Async and Sync communication are common pitfals for scalabil
 
 In a regular architecture, the Router would not be able to scale horizontally, because a reply from MQTT (round-robin) may fall on a different node, one that did not make the request, making it unable to ack the request (made by the worker).
 
-Check out the [docker-compose.yml](/docker-compose.yml)! Note that all of our services have multiple replicas and the requests still work out.
+Check out the [docker-compose.yml](/docker-compose.yml)! Note that all of our services have multiple replicas and the requests are still able to be routed correctly.
+
+Happy path:
+
+```sh
+docker compose up --build
+```
+
+Access `http://localhost:15672/`, login with user: `guest` as password: `guest`. In `task_queue` queue, publish the example task:
+
+```json
+{
+  "action": "test",
+  "transaction_id": "1234567890",
+  "product_id": "1234567890",
+  "ts": "2025-06-25T18:30:32.56958179Z"
+}
+```
+
+Example reply:
+
+```sh
+docker run -ti --network tcc_default eclipse-mosquitto:1.6.15 ash
+
+mosquitto_pub -h mqtt -t /gw/GW_MAC/response -m {\"deviceMac\":\"000000000001\",\"ack\":true}
+mosquitto_pub -h mqtt -t /gw/GW_MAC/response -m {\"deviceMac\":\"000000000002\",\"ack\":true}
+```

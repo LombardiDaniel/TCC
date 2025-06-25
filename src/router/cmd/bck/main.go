@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lombardidaniel/tcc/router/pkg/models"
 	"github.com/lombardidaniel/tcc/router/pkg/services"
 
@@ -48,7 +49,7 @@ func onMsgCallback(payload []byte) error {
 
 func init() {
 	broker, _ := url.Parse("tcp://mqtt:1883")
-	clientID := "bck"
+	clientID := "bck" + uuid.NewString()
 
 	responseTopic := "/gw/+/response"
 	cfg := mqtt.ClientConfig{

@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lombardidaniel/tcc/router/pkg/models"
 	"github.com/lombardidaniel/tcc/router/pkg/services"
 
@@ -27,7 +28,7 @@ var (
 
 func init() {
 	broker := "tcp://mqtt:1883" // Replace with your broker URL
-	clientID := "fwd"
+	clientID := "fwd" + uuid.NewString()
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(broker)
