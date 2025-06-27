@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"os"
+	"strings"
 	"time"
 
+	"github.com/lombardidaniel/tcc/worker/domain"
 	"github.com/lombardidaniel/tcc/worker/iot"
 	"github.com/lombardidaniel/tcc/worker/models"
 	"github.com/lombardidaniel/tcc/worker/services"
@@ -15,10 +18,22 @@ import (
 var (
 	msgs <-chan amqp.Delivery
 
+	dbService        services.DBService
 	messagingService services.MessagingService
 
 	iotBackbone iot.Backbone
+
+	executor domain.Executor
 )
+
+func GetEnvVarDefault(name string, def string) string {
+	envVar, ok := os.LookupEnv(name)
+	if !ok {
+		return def
+	}
+
+	return envVar
+}
 
 func init() {
 	conn, err := amqp.Dial("amqp://guest:guest@rbmq:5672/")
@@ -57,11 +72,20 @@ func init() {
 	}
 
 	messagingService = services.NewMessagingServiceImpl(ch)
+	dbService = &services.DBServiceMock{}
 
-	iotBackbone = iot.NewBackboneImpl(
-		&services.DBServiceMock{},
-		messagingService,
-	)
+	if strings.ToLower(GetEnvVarDefault("CUSTOM_BACKBONE", "true")) == "true" {
+		iotBackbone = iot.NewBackboneImpl(
+			messagingService,
+		)
+	} else {
+		// iotBackbone = iot.NewBackboneBaselineImpl(
+		// 	dbService,
+		// 	messagingService,
+		// )
+	}
+
+	executor = domain.NewExecutor(iotBackbone, dbService, messagingService)
 }
 
 func main() {
@@ -88,9 +112,14 @@ func main() {
 		}
 
 		log.Printf("Received transaction: %s", task.TransactionId)
-		err = iotBackbone.Execute(task)
+
+		err = executor.Execute(task) // business logic
 		if err != nil {
 			log.Printf("Could not execute transaction: %s", task.TransactionId)
+			err := d.Acknowledger.Nack(d.DeliveryTag, false, false)
+			if err != nil {
+				panic(err)
+			}
 			continue
 		}
 

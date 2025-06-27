@@ -39,6 +39,7 @@ func onMsgCallback(payload []byte) error {
 		return err
 	}
 
+	// log.Printf("replying to: %s\n", k)
 	err = messagingService.Reply(k, rep)
 	if err != nil {
 		return err

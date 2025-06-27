@@ -27,3 +27,7 @@ MSR-TR-95-56, December 1995.
 [presentation] Raffi Krikorian: “Timelines at Scale,” at QCon San Francisco, November 2012. Available at: https://www.infoq.com/presentations/Twitter-Timeline-Scalability/
 
 [article] A. Thaljaoui, T. Val, N. Nasri and D. Brulin, "BLE localization using RSSI measurements and iRingLA," 2015 IEEE International Conference on Industrial Technology (ICIT), Seville, Spain, 2015, pp. 2178-2183, doi: 10.1109/ICIT.2015.7125418. keywords: {Receivers;Indexes;Accuracy;Bluetooth;Estimation;Distance measurement;Position measurement;Smarthome;Localization;BLE;RSSI},
+
+[book] KASUN INDRASIRI; SRISKANDARAJAH SUHOTHAYAN. Design patterns for cloud native applications : patterns in practice using APIs, data, events, and streams. [s.l.] Sebastopol, Ca O’reilly, 2021.
+
+‌

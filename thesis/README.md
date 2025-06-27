@@ -108,7 +108,7 @@ Furthermore, a key advantage of using a robust message queue is its ability to g
 
 #### Business Layer (Task Worker)
 
-The task_worker is responsible for consuming messages (tasks) from the task_queue. Crucially, the task_worker encapsulates the core business logic associated with processing these commands. This includes interacting with databases (e.g., to fetch detailed product information for a price update, log the command's status, and update the device's state) and any other external services required to fulfill the task. Upon receiving a task and initial checks and processing is completed, the task_worker makes an RPC request to the Communication Layer of our system.
+The task_worker is responsible for consuming messages (tasks) from the task_queue. Crucially, the task_worker encapsulates the core business logic associated with processing these commands. This includes interacting with databases (e.g., to fetch detailed product information for a price update, log the command's status, and update the device's state) and any other external services required to fulfill the task. Upon receiving a task and initial checks and processing is completed, the task_worker makes an RPC request to the Communication Layer of our system. After the replies from the Communication Layer, the task_worker treats the results accordingly by notifying clients and updating the databases.
 
 #### Communication Layer (Router)
 
@@ -119,3 +119,17 @@ Since the designed IoT devices communicate in Bluetooth Low Energy (BLE), there 
 This Communication Layer inherently represents the primary scalability challenge for the entire system. While the task_queue and task_workers can scale horizontally with relative ease by adding more instances, the Communication Layer faces unique challenges in maintaining device connectivity and command routing efficiency across a massive and dynamic network of IoT gateways and devices. In traditional architectures, the load-balancing done by MQTT would not allow a system to simply scale horizontally, as the nodes that recieve the RPC request may not be the same ones that recieve the response from the device. This "misrouting" of replies would lead to responses being discarded as unrelated or "junk messages," effectively breaking the critical request-reply pattern essential for reliable actuator control and feedback. Our Communication Layer's specialized logic directly addresses this limitation by ensuring response correlation and proper routing, which is fundamental to overcoming this scalability hurdle.
 
 Any bottleneck or inefficiency within this intricate layer can propagate throughout the entire system, severely hindering the overall scalability, responsiveness, and reliability of the large-scale IoT application.
+
+### Flexible Scalability
+
+The dynamic nature of large-scale IoT deployments, where command and data volumes can shift dramatically throughout the day, renders static, peak-capacity provisioning economically unfeasible and technically inefficient. Such an approach inevitably leads to substantial resource waste during periods of low activity and eventual unavailability on partial system failures. To overcome this, our Communication Backbone is fundamentally designed for flexible scalability.
+
+This means the system is built to intelligently and automatically adapt to match the actual, real-time demand. By designing the architecture with a Cloud-Native solution in mind, we leverage many toolings that inherently provide the elasticity and resilience required for dynamic IoT environments. This approach allows our system to seamlessly scale resources up or down, ensuring optimal performance during peak loads and maximizing cost-efficiency during periods of lower activity (INDRASIRI, K. SUHOTHAYAN S. 2021).
+
+### Testing Methodologies
+
+For testing our system, we will emulate the Gateways, and consequently the ESLs. The task producer will also be emulated. This allows us to measure only the impacts of the communication backbone.
+
+The comparison will take in count both Quantitative Metrics and Qualitative Observations. For the Quantitative Metrics, we'll dive into the RPC Latency and the Throughput. For the Qualitative Observations, the complexity of deploying and managing the systems, ease of debugging and the operational overhead.
+
+For the experiments, we'll take into consideration the case where the system has reached it's operating limits on each node, and seeing how it's elasticity for horizontal scalability.
