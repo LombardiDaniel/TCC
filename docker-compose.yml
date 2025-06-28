@@ -1,4 +1,81 @@
 services:
+  task_worker:
+    build:
+      context: src/task_worker
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_HOST: rbmq
+      REDIS_HOST: redis
+      MQTT_HOST: mqtt
+      CUSTOM_BACKBONE: false
+    depends_on:
+      rbmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    deploy:
+      replicas: 2
+    restart: always
+
+  router_fwd:
+    build:
+      context: src/router
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_HOST: rbmq
+      REDIS_HOST: redis
+      MQTT_HOST: mqtt
+    depends_on:
+      rbmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    command: ./fwd
+    deploy:
+      replicas: 2
+    restart: always
+
+  router_bck:
+    build:
+      context: src/router
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_HOST: rbmq
+      REDIS_HOST: redis
+      MQTT_HOST: mqtt
+    depends_on:
+      rbmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    command: ./bck
+    deploy:
+      replicas: 2
+    restart: always
+
+  # router_baseline:
+  #   build:
+  #     context: src/router
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     MQTT_HOST: mqtt
+  #   depends_on:
+  #     mqtt:
+  #       condition: service_started
+  #   expose:
+  #     - 8080
+  #   command: ./baseline
+  #   deploy:
+  #     replicas: 1
+  #   restart: always
+
+  #### - External Cloud Services - ####
   rbmq:
     image: rabbitmq:3-management
     ports:
@@ -43,62 +120,3 @@ services:
     restart: always
     depends_on:
       - mqtt
-
-  task_worker:
-    build:
-      context: src/task_worker
-      dockerfile: Dockerfile
-    environment:
-      RABBITMQ_HOST: rbmq
-      REDIS_HOST: redis
-      MQTT_HOST: mqtt
-    depends_on:
-      rbmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mqtt:
-        condition: service_started
-    deploy:
-      replicas: 1
-    restart: always
-
-  router_fwd:
-    build:
-      context: src/router
-      dockerfile: Dockerfile
-    environment:
-      RABBITMQ_HOST: rbmq
-      REDIS_HOST: redis
-      MQTT_HOST: mqtt
-    depends_on:
-      rbmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mqtt:
-        condition: service_started
-    command: ./fwd
-    deploy:
-      replicas: 2
-    restart: always
-
-  router_bck:
-    build:
-      context: src/router
-      dockerfile: Dockerfile
-    environment:
-      RABBITMQ_HOST: rbmq
-      REDIS_HOST: redis
-      MQTT_HOST: mqtt
-    depends_on:
-      rbmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mqtt:
-        condition: service_started
-    command: ./bck
-    deploy:
-      replicas: 2
-    restart: always

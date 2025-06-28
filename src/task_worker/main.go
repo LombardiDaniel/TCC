@@ -79,10 +79,9 @@ func init() {
 			messagingService,
 		)
 	} else {
-		// iotBackbone = iot.NewBackboneBaselineImpl(
-		// 	dbService,
-		// 	messagingService,
-		// )
+		iotBackbone = iot.NewBackboneRestImpl(
+			"http://router_baseline:8080/route",
+		)
 	}
 
 	executor = domain.NewExecutor(iotBackbone, dbService, messagingService)

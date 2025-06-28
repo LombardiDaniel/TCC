@@ -101,10 +101,13 @@ func main() {
 			err := json.Unmarshal(d.Body, &m)
 			if err != nil {
 				log.Printf("Error unmarshalling task: %s", err)
+				return
 			}
+
 			err = sharedMemService.Save(ctx, m.DeviceMac, d.ReplyTo)
 			if err != nil {
 				log.Printf("Error saving to shared memory: %s", err)
+				return
 			}
 
 			fmt.Printf("Saved to shared memory: %s: %s", m.DeviceMac, d.ReplyTo)
@@ -113,7 +116,9 @@ func main() {
 			err = messagingService.Forward(t, m)
 			if err != nil {
 				fmt.Printf("Error forwarding message: %s", err)
+				return
 			}
+
 			fmt.Printf("Message forwarded to topic: %s: %s", t, m.DeviceMac)
 		}()
 	}

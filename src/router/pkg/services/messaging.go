@@ -25,7 +25,6 @@ type MessagingServiceImpl struct {
 }
 
 func NewMessagingService(ch *amqp.Channel, mqttClient *mqtt.Client) MessagingService {
-
 	return &MessagingServiceImpl{
 		ch:         ch,
 		mqttClient: mqttClient,

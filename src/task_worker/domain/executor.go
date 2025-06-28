@@ -49,7 +49,7 @@ func (e *executorImpl) Execute(task models.Task) error {
 	}
 
 	// Wait for replies
-	reps, err := e.messagingService.Forward(msgs)
+	reps, err := e.backbone.Forward(msgs)
 	if err != nil {
 		return err
 	}
