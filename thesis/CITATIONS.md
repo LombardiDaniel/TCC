@@ -10,7 +10,7 @@ Engineering. arXiv preprint arXiv:2103.04969, 2021. https://arxiv.org/ftp/arxiv/
 
 [book] L. Atzori, A. Iera, G. Morabito. The Internet of Things: a survey. Computer Networks, 54 (2010), pp. 2787-2805
 
-[special publication] MELL, P. M.; GRANCE, T. The NIST Definition of Cloud Computing. 2011, Available on: <https://www.nist.gov/publications/nist-definition-cloud-computing>.
+[special publication] MELL, P. M.; GRANCE, T. The NIST Definition of Cloud Computing. 2011, Available at: <https://www.nist.gov/publications/nist-definition-cloud-computing>.
 
 AAQIB, S. An Efficient Cluster-Based Approach for Evaluating Vertical and Horizontal
 Scalability of Web Servers using Linear and Non-Linear Workloads. In 2019 3rd
@@ -30,4 +30,10 @@ MSR-TR-95-56, December 1995.
 
 [book] KASUN INDRASIRI; SRISKANDARAJAH SUHOTHAYAN. Design patterns for cloud native applications : patterns in practice using APIs, data, events, and streams. [s.l.] Sebastopol, Ca O’reilly, 2021.
 
+[website] CLOUD NATIVE COMPUTING FOUNDATION. Who We Are. Available at: https://www.cncf.io/about/who-we-are/. Accessed on: 15 jun. 2025.
 ‌
+[website] KUBERNETES. Overview. 2024. Available at: https://kubernetes.io/docs/concepts/overview/. Accessed on: 16 jun. 2025.
+
+[website] DOCKER. What is Docker. Available at: https://docs.docker.com/get-started/docker-overview/. Accessed on: 18 jun. 2025.
+
+[website] GO. Use Cases. Available at: https://go.dev/solutions/use-cases. Accessed on 18 jun. 2025.

@@ -84,11 +84,7 @@ In-memory datastores like Redis play a crucial role in modern distributed system
 
 Kubernetes is an open-source container orchestration platform that inherently delivers high scalability and elasticity for applications. It achieves this by managing containerized workloads and services, abstracting away the underlying infrastructure. Its core features, like the Horizontal Pod Autoscaler (HPA), automatically adjust the number of running application instances (pods) based on metrics such as CPU utilization or custom application-specific demands, ensuring that enough capacity is always available to handle fluctuating user traffic without manual intervention. Complementing this, the Cluster Autoscaler works at a lower level, dynamically adding or removing worker nodes (the virtual machines that run the pods) from the underlying cloud provider's infrastructure. This intelligent, automated scaling ensures optimal resource utilization, as the system can rapidly expand during peak loads and contract during off-peak periods, directly translating to cost efficiency by only paying for the resources actively consumed, making it ideal for the dynamic and often unpredictable workloads found in large-scale IoT systems.
 
-## METHODOLOGY
-
-Considering the importance and challenges of achieving true scalability in large distributed IoT systems, this chapter describes the development of a new method of communication for RPC for IoT Cloud Applications, one that leverages the elasticity of cloud environments with kubernetes to achieve true horizontal scalability in an MQTT IoT actuator network. This will be called our Communication Backbone.
-
-On top of that, we also discuss methodologies to test, measure and validate the proposed system, as well as comparing it to the de facto method for such cases, both in scalability as well as complexity of configuration and Time-to-Deploy/Onboard new devices.
+## PROBLEM STATEMENT
 
 ### General Architecture
 
@@ -120,6 +116,20 @@ This Communication Layer inherently represents the primary scalability challenge
 
 Any bottleneck or inefficiency within this intricate layer can propagate throughout the entire system, severely hindering the overall scalability, responsiveness, and reliability of the large-scale IoT application.
 
+### Communication Backbone: RPC via Distributed Queues
+
+By default, the execmplified architecture will use a simple RPC via an HTTP method, this will be our baseline system.
+
+![rpc via http](/thesis/static/rpc_via_http.png)
+
+The router entity exists to enable the task_worker to be completely device vendor/technology agnostic. It (in our system) communicates with the gateways via MQTT, but this allows us to quickly modify this in the future.
+
+## METHODOLOGY
+
+Considering the importance and challenges of achieving true scalability in large distributed IoT systems, this chapter describes the development of a new method of communication for RPC for IoT Cloud Applications, one that leverages the elasticity of cloud environments with kubernetes to achieve true horizontal scalability in an MQTT IoT actuator network. This will be called our Communication Backbone.
+
+On top of that, we also discuss methodologies to test, measure and validate the proposed system, as well as comparing it to the de facto method for such cases, both in scalability as well as complexity of configuration and Time-to-Deploy/Onboard new devices.
+
 ### Flexible Scalability
 
 The dynamic nature of large-scale IoT deployments, where command and data volumes can shift dramatically throughout the day, renders static, peak-capacity provisioning economically unfeasible and technically inefficient. Such an approach inevitably leads to substantial resource waste during periods of low activity and eventual unavailability on partial system failures. To overcome this, our Communication Backbone is fundamentally designed for flexible scalability.
@@ -128,8 +138,45 @@ This means the system is built to intelligently and automatically adapt to match
 
 ### Testing Methodologies
 
-For testing our system, we will emulate the Gateways, and consequently the ESLs. The task producer will also be emulated. This allows us to measure only the impacts of the communication backbone.
+To rigorously evaluate the proposed Communication Backbone, we will employ a comprehensive testing strategy that combines both quantitative performance measurements and qualitative operational observations. A core tenet of our methodology is the isolation of the Communication Backbone's performance by emulating external dependencies. This means that both the IoT Gateways (and, by extension, the ESLs they manage) and the task producers will be simulated. This controlled environment allows us to specifically assess the impact and capabilities of our solution, minimizing external variability and noise.
 
-The comparison will take in count both Quantitative Metrics and Qualitative Observations. For the Quantitative Metrics, we'll dive into the RPC Latency and the Throughput. For the Qualitative Observations, the complexity of deploying and managing the systems, ease of debugging and the operational overhead.
+The comparison will take in count both Quantitative Metrics and Qualitative Observations. For the Quantitative Metrics, we'll dive into the RPC Latency and the Throughput. For the Qualitative Observations, we will consider the complexity of deploying and managing the systems, ease of debugging and the operational overhead. For the experiments, we'll take into consideration the case where the system has reached it's operating limits on each node, and seeing how it's elasticity for horizontal scalability.
 
-For the experiments, we'll take into consideration the case where the system has reached it's operating limits on each node, and seeing how it's elasticity for horizontal scalability.
+All testing will be conducted within Docker containers (DOCKER, 2025). This approach offers several critical advantages:
+
+- Reproducibility: Docker ensures that the testing environment is consistent across all runs, eliminating "it worked on my machine" scenarios and guaranteeing that results are comparable.
+- Isolation: Each component of our test setup (e.g., emulated gateways, task producers, the Communication Backbone itself) can run in its own isolated container, preventing interference and simplifying debugging.
+- Scalability of the Test Environment: Docker allows for easy scaling of the test infrastructure itself. We can quickly spin up numerous instances of emulated gateways and task producers to simulate large-scale scenarios without needing extensive physical hardware.
+- Efficiency: Containerization reduces setup time and overhead, enabling rapid iteration of tests and scenarios.
+
+Our evaluation will focus on the following key aspects:
+
+#### Quantitative Metrics
+
+##### RPC Latency
+
+This is a critical measure of the responsiveness of our system, especially for actuator commands where real-time feedback is crucial. We will measure:
+
+- End-to-End Latency: The total time elapsed from the moment a task is dispatched by the emulated task producer until a success or failure acknowledgment is received from the emulated ESL/Gateway via the Communication Backbone. This will be measured at various load levels.
+- Communication Layer Latency: The time taken for a request to traverse from the task_worker through the Communication Layer (Router) and reach the emulated Gateway, and for the response to return. This helps pinpoint bottlenecks within our proposed solution.
+- Latency Distribution: Beyond just averages, we will analyze latency distribution (e.g., percentiles like P90, P95, P99) to understand tail latencies, which are crucial for real-world user experience and system reliability under stress.
+
+##### Throughput
+
+This metric quantifies the volume of operations our system can handle within a given timeframe, directly assessing its processing capacity. We will measure:
+
+- RPCs per second: The number of successful RPC requests processed by the Communication Backbone per second.
+- Task completion rate: The rate at which the system successfully processes and acknowledges commands from the task_queue to the emulated ESLs.
+- Messages processed per second: The total volume of messages (requests and responses) flowing through the MQTT layer, indicating the underlying messaging infrastructure's efficiency.
+
+The experiments will specifically focus on scenarios where the system components are pushed to their operational limits on individual nodes. This will allow us to observe and quantify how effectively the Communication Backbone leverages horizontal scalability to maintain performance and reliability when new nodes (Docker containers representing scaled instances of the Communication Layer and Task Workers) are introduced, demonstrating its elasticity under increasing load. We will gather data on how throughput increases and latency remains stable (or degrades gracefully) as the number of concurrent emulated devices and command rates escalate.
+
+#### Qualitative Observations
+
+Beyond raw numbers, the practical implications of implementing and managing such a system are paramount. Our qualitative observations will encompass:
+
+- Ease of setup: How straightforward is it to deploy the Communication Backbone and its dependencies?
+- Configuration overhead: The effort required to configure and integrate new components or devices.
+- Operational simplicity: How easy is it to monitor, update, and manage the running system in a production-like environment? This includes aspects like ease of scaling up and down instances.
+
+By combining these quantitative and qualitative measures, we aim to provide a holistic evaluation of our Communication Backbone, not only demonstrating its technical superiority in terms of scalability and performance for IoT cloud applications but also highlighting its practical advantages for real-world deployments.
