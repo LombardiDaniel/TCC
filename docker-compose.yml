@@ -7,7 +7,7 @@ services:
       RABBITMQ_HOST: rbmq
       REDIS_HOST: redis
       MQTT_HOST: mqtt
-      CUSTOM_BACKBONE: false
+      CUSTOM_BACKBONE: true
     depends_on:
       rbmq:
         condition: service_healthy
