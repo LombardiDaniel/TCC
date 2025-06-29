@@ -10,7 +10,7 @@ Supervisor: Fredy João Valente
 
 ## ABSTRACT
 
-The rapid expansion of the Internet of Things (IoT) has necessitated the development of robust and scalable cloud applications to manage the vast influx of data and ensure reliable communication between devices. This paper presents a comprehensive study backed by the practical experience gained during the development of large-scale networks with IoT actuators. We begin by exploring the unique challenges posed by IoT ecosystems, including real-time processing implementations and scaling for cloud applications and their difficulties. The study delves into the utilization of in-memory databases, queues and RPC methods to act as shared-memory, creating a vastly scalable distributed system that enables the utilization of traditional scaling methodologies for large MQTT based IoT environments.
+The rapid expansion of the Internet of Things (IoT) has necessitated the development of robust and scalable cloud applications to manage the vast influx of data and ensure reliable communication between devices. This work presents a comprehensive study backed by the practical experience gained during the development of large-scale networks with IoT actuators. We begin by exploring the unique challenges posed by IoT ecosystems, including real-time processing implementations and scaling for cloud applications and their difficulties. The study delves into the utilization of in-memory databases, queues and RPC methods to act as shared-memory, creating a vastly scalable distributed system that enables the utilization of traditional scaling methodologies for large MQTT based IoT environments.
 
 ## INTRODUCTION
 
@@ -118,11 +118,15 @@ Any bottleneck or inefficiency within this intricate layer can propagate through
 
 ### Communication Backbone: RPC via Distributed Queues
 
-By default, the execmplified architecture will use a simple RPC via an HTTP method, this will be our baseline system.
+By default, the execmplified architecture will make a simple RPC via an HTTP method, this will be our baseline system.
 
 ![rpc via http](/thesis/static/rpc_via_http.png)
 
 The router entity exists to enable the task_worker to be completely device vendor/technology agnostic. It (in our system) communicates with the gateways via MQTT, but this allows us to quickly modify this in the future.
+
+#### Limitations of this system
+
+# TODO: falar do round-robin do MQTT com diagrama, falar de multiplos gateways (?), multiplos routers e tb falar do problema de de escalabilidade e complexidade de configuração. O SENDER NAO RECEBE A REPLY
 
 ## METHODOLOGY
 
