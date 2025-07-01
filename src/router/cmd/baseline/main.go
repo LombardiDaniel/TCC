@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -19,9 +20,13 @@ var (
 
 	dbService        services.DBService
 	messagingService services.MessagingService
+
+	ackChans map[string]chan bool // MAC: chan[ACK]
 )
 
 func init() {
+	ackChans = make(map[string]chan bool)
+
 	broker := "tcp://mqtt:1883" // Replace with your broker URL
 	clientID := "fwd" + uuid.NewString()
 
@@ -35,6 +40,21 @@ func init() {
 		os.Exit(1)
 	}
 	fmt.Println("Connected to MQTT broker")
+
+	mqttClient.Subscribe("/gw/+/response", 1, func(c mqtt.Client, m mqtt.Message) {
+		rep, err := models.RoutingReply{}.FromMqtt(m.Payload())
+		if err != nil {
+			slog.Error("could not parse message")
+			return
+		}
+
+		ackChan, exists := ackChans[rep.DeviceMac]
+		if !exists {
+			return
+		}
+
+		ackChan <- rep.Ack
+	})
 
 	dbService = &services.DBServiceMock{}
 	messagingService = services.NewMessagingService(nil, &mqttClient)
@@ -63,8 +83,17 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: precisa colocar o reply, pegar de um chan (?)
+	ackChans[msg.DeviceMac] = make(chan bool)
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Received\n"))
+	select {
+	case ack := <-ackChans[msg.DeviceMac]:
+		if ack {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("ACK received\n"))
+		} else {
+			http.Error(w, "NACK received", http.StatusBadGateway)
+		}
+	case <-time.After(30 * time.Second):
+		http.Error(w, "Timeout waiting for ACK", http.StatusGatewayTimeout)
+	}
 }

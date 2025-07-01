@@ -62,7 +62,7 @@ func init() {
 			cm.Subscribe(context.Background(), &paho.Subscribe{
 				Subscriptions: []paho.SubscribeOptions{{
 					Topic: "$share/router-bck-group/" + responseTopic,
-					QoS:   byte(0),
+					QoS:   byte(1),
 				}},
 			})
 		},

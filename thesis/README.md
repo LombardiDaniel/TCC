@@ -26,6 +26,29 @@ To effectively manage these fluctuating and diverse workloads, cloud computing p
 
 Drawing from practical experience, our study examines a core problem arising from the implementation of an IoT solution in a hardware store, emphasizing the difficulties in achieving real-time processing and effective scaling in a cloud scenario. This problem became acutely evident during the development and deployment of Electronic Shelf Labels (ESLs) in a large-scale hardware store chain in Brazil. This particular implementation presented unique challenges, given the potential for deploying around 50 thousand ESLs per store, across dozens of stores nationwide, leading to a vast IoT ecosystem. We'll dive into the scaling limitations of traditional broker architectures as applied to our specific use case, particularly when managing the bidirectional communication and real-time control demands of large-scale Electronic Shelf Label (ESL) deployments. This includes a detailed examination of how the MQTT protocol, while effective for general load balancing, encounters significant hurdles in maintaining the request-reply pattern necessary for Remote Procedure Calls (RPCs) when horizontal scaling is implemented, as replies can be misrouted to different nodes than their originating requests. We propose and evaluate a novel approach leveraging distributed queues to overcome these architectural constraints, ensuring seamless, scalable, and reliable operations for IoT cloud applications involving actuators.
 
+## OBJECTIVES
+
+### General Objective
+
+The main objective of this work is to create a Minimum Viable Product (MVP) of a communication backbone for large-scale IoT device networks, being implemented and tested with the use of Electronic Shelf Lables (ESLs) in a large hardware-store chain in Brazil.
+
+### Specific Objectives
+
+1. Analyze and define project requirements, identifying the main pitfalls and downsides of the pre-existing architectures and traditional models of communication with such devices.
+2. Elaborate an adequate architecture that allows for high elasticity in terms of horizontal scaling.
+3. Build the MVP.
+4. Test and assess the proposed architecture with consideration for performance benchmarks and also a qualitative analysis.
+
+### Expected Results
+
+1. A well-defined and robust architecture that prioritizes horizontal scalability, demonstrating high elasticity to accommodate varying loads thoughout the day.
+
+2. Functional Minimum Viable Product (MVP): A working MVP that embodies the core functionalities of the proposed solution and serves as a tangible demonstration of the architectural design.
+
+3. Validated Performance and Quality: Quantitative data from performance benchmarks and a qualitative analysis confirming the efficacy and efficiency of the proposed architecture. This will include insights into its strengths and areas for further optimization, ensuring it meets or exceeds predefined performance criteria.
+
+On top of this, it is expected that this project can be used as a base and reference for future projects that demand a quickly deployable IoT communication backbone with minimal configuration. The developed example of ESLs can quickly be adapted to other product niches.
+
 ## THEORETICAL BASIS
 
 This chapter will define the core concepts necessary to understand our solution, including the nuances of IoT ecosystems, the principles of cloud scalability, and the challenges of implementing Remote Procedure Calls (RPCs) over the MQTT protocol in horizontally scaled environments. It will further elaborate on how distributed queues and in-memory data stores are critical for overcoming these challenges, enabling seamless and reliable operations for large-scale IoT applications. This foundational knowledge is essential for appreciating the architectural design presented in this thesis. We will also do a quick analysis of used tools and technologies.
@@ -35,6 +58,12 @@ This chapter will define the core concepts necessary to understand our solution,
 As defined by Atzori et al., Internet of Things can be defined as three main paradigms, internet-oriented (middleware), things oriented (sensors) and semantic-oriented (knowledge). It is a network of physical objects embedded with technologies such as sensors, actuators and software that allows it to connect to external systems.
 
 Sensors are devices that act as an intake point of data, they measure physical phenomena (i.e. temperature) and convert them to digital data. Actuators are devices that receive commands from an external control system and converts them into physical actions (i.e. switching a light, changing a value etc.), they allow us to close the loop between the digital and physical worlds, commonly requiring bidirectional control to acknowledge the commands. Our work focuses on the latter. Both sensors and actuators commonly operate via a GW (gateway) that act as a middleman from our servers to the devices (this allows us to have use different protocols such as bluetooth while still connecting them via other protocols to the servers, such as MQTT).
+
+Considering the particularities of IoT systems and Systems Engineering, there is a clear and pressing need for advanced development in this field, especially when considering large-scale applications. IoT systems inherently involve a vast array of interconnected components, ranging from sensors and actuators to complex cloud platforms and data analytics engines. This heterogeneity, combined with the need for real-time processing in large-scale environments, presents unique and new challenge for Software Enginnering.
+
+A significant hurdle in advancing this area is the current lack of comprehensive bibliography and standardized methodologies specifically tailored for large-scale IoT systems engineering. While there's a growing body of work on individual IoT technologies and general systems engineering, dedicated literature on the systematic design, development, and deployment of IoT at scale remains scarce. This gap creates a void in best practices, reference architectures, and proven approaches for tackling issues like managing interconnected "systems of systems" where constituent elements may have their own independent life cycles and stakeholders. Consequently, organizations embarking on large-scale IoT initiatives often find themselves navigating uncharted territory, relying on ad-hoc solutions or adapting frameworks from other domains, which may not fully capture the nuances of IoT's distributed, event-driven, and often highly autonomous nature. Filling this bibliographic void is paramount to establishing a robust baseline for development, fostering knowledge sharing, and accelerating the successful realization of ambitious, impactful IoT applications (MOTTA, R. et al. 2019).
+
+As such, this study shares a proven, practical method for developing and deploying large-scale IoT networks that communicate via MQTT following a scalable request-reply RPC model for IoT architectures.
 
 ### Scalability
 
@@ -83,50 +112,6 @@ In-memory datastores like Redis play a crucial role in modern distributed system
 ### Kubernetes (and Container Orchestration)
 
 Kubernetes is an open-source container orchestration platform that inherently delivers high scalability and elasticity for applications. It achieves this by managing containerized workloads and services, abstracting away the underlying infrastructure. Its core features, like the Horizontal Pod Autoscaler (HPA), automatically adjust the number of running application instances (pods) based on metrics such as CPU utilization or custom application-specific demands, ensuring that enough capacity is always available to handle fluctuating user traffic without manual intervention. Complementing this, the Cluster Autoscaler works at a lower level, dynamically adding or removing worker nodes (the virtual machines that run the pods) from the underlying cloud provider's infrastructure. This intelligent, automated scaling ensures optimal resource utilization, as the system can rapidly expand during peak loads and contract during off-peak periods, directly translating to cost efficiency by only paying for the resources actively consumed, making it ideal for the dynamic and often unpredictable workloads found in large-scale IoT systems.
-
-## PROBLEM STATEMENT
-
-### General Architecture
-
-The Communication Backbone developed for this thesis consists of several components:
-
-![simplified architecture](/thesis/static/simplified_arch.png)
-
-#### Task Queue
-
-Firstly, the `task_queue` is responsible for delivering tasks to our `task_worker`. Tasks are actions to be executed in the IoT devices (ESLs, in our case). The utilization of a queue here is paramount, primarily because these actions can be inherently long-running, often with an estimated timeout of around three minutes per task.
-
-This potential for delays makes a synchronous request-reply model impractial and innefficient for the initial command dispatch. If the calling application were to wait synchronously for three minutes for each ESL action to complete, its threads would be tied up, quickly exhausting resources and severely limiting the system's overall throughput and responsiveness. This is particularly problematic in a large-scale IoT environment where thousands or tens of thousands of simultaneous commands might be issued (e.g., updating prices across an entire store).
-
-By leveraging asynchronous communication via the task_queue, the producer (application that dispatches the tasks) can immediately hand off the task to the queue and consider its part of the transaction complete. It does not need to block and wait for the ESL to process the command. The queue then acts as a durable buffer, ensuring that the task is persisted and will eventually be delivered to an available task_worker, even if the worker or the IoT device experiences temporary disconnections or processing delays. This decoupling allows the producer to quickly move on to process other commands or serve other users, dramatically improving the perceived responsiveness and overall system capacity. It also provides inherent resilience: if a task_worker fails, the tasks remain in the queue to be picked up by another worker once available, preventing data loss and ensuring eventual consistency.
-
-Furthermore, a key advantage of using a robust message queue is its ability to guarantee specific delivery semantics. In our model, this is extremely important, as we want to guarantee at-least-once execution semantics for critical operations like price updates. This means that once a price update command is sent to the task_queue, the system ensures it will be processed and executed by a task_worker at least one time. This guarantee is vital for business-critical operations like price synchronization, as it prevents scenarios where a price update might be lost due to transient network issues, worker failures, or device unresponsiveness. The queue achieves this through mechanisms such as message acknowledgments: a message is only considered processed and removed from the queue after the task_worker explicitly acknowledges its successful handling, or after a configurable timeout, upon which it can be redelivered to another worker (KLEPPMANN, M. 2017). This robustness is non-negotiable for ensuring that all prices displayed on ESLs are consistently and accurately updated, directly addressing a core business requirement.
-
-#### Business Layer (Task Worker)
-
-The task_worker is responsible for consuming messages (tasks) from the task_queue. Crucially, the task_worker encapsulates the core business logic associated with processing these commands. This includes interacting with databases (e.g., to fetch detailed product information for a price update, log the command's status, and update the device's state) and any other external services required to fulfill the task. Upon receiving a task and initial checks and processing is completed, the task_worker makes an RPC request to the Communication Layer of our system. After the replies from the Communication Layer, the task_worker treats the results accordingly by notifying clients and updating the databases.
-
-#### Communication Layer (Router)
-
-The Communication Layer (Router) is responsible for everything regarding the addressing and messaging the individual devices. It connects to the subsequest MQTT Layer and holds the Communication Backbone logic. It allows the task_worker to be completely technology and vendor independant (when referring to the IoT devices).
-
-Since the designed IoT devices communicate in Bluetooth Low Energy (BLE), there are intermediate Gateway Devices to "translate" requests to BLE. To reach a target device (ESL), the intermediate gateway hop also needs to be addressed, as such, the Communcation Layer is also responsible for identifying the correct gateway that the ESL is currently addressable to. This identification is dynamic and crucial for reliable communication; for any given ESL, there might be multiple gateways within its BLE range. The Communication Layer must intelligently determine the optimal gateway to route the request through, often by selecting the gateway reporting the strongest Received Signal Strength Indicator (RSSI) from the ESL. This ensures the command is sent via the most stable and reliable path, minimizing signal loss and improving command success rates. This also saves us from needing more complex methods for reaching BLE signal stability, wich would be too complex considering the dynamic environment inside the construction stores (THALJAOUI, A. et al. 2015).
-
-This Communication Layer inherently represents the primary scalability challenge for the entire system. While the task_queue and task_workers can scale horizontally with relative ease by adding more instances, the Communication Layer faces unique challenges in maintaining device connectivity and command routing efficiency across a massive and dynamic network of IoT gateways and devices. In traditional architectures, the load-balancing done by MQTT would not allow a system to simply scale horizontally, as the nodes that recieve the RPC request may not be the same ones that recieve the response from the device. This "misrouting" of replies would lead to responses being discarded as unrelated or "junk messages," effectively breaking the critical request-reply pattern essential for reliable actuator control and feedback. Our Communication Layer's specialized logic directly addresses this limitation by ensuring response correlation and proper routing, which is fundamental to overcoming this scalability hurdle.
-
-Any bottleneck or inefficiency within this intricate layer can propagate throughout the entire system, severely hindering the overall scalability, responsiveness, and reliability of the large-scale IoT application.
-
-### Communication Backbone: RPC via Distributed Queues
-
-By default, the execmplified architecture will make a simple RPC via an HTTP method, this will be our baseline system.
-
-![rpc via http](/thesis/static/rpc_via_http.png)
-
-The router entity exists to enable the task_worker to be completely device vendor/technology agnostic. It (in our system) communicates with the gateways via MQTT, but this allows us to quickly modify this in the future.
-
-#### Limitations of this system
-
-# TODO: falar do round-robin do MQTT com diagrama, falar de multiplos gateways (?), multiplos routers e tb falar do problema de de escalabilidade e complexidade de configuração. O SENDER NAO RECEBE A REPLY
 
 ## METHODOLOGY
 
@@ -184,3 +169,82 @@ Beyond raw numbers, the practical implications of implementing and managing such
 - Operational simplicity: How easy is it to monitor, update, and manage the running system in a production-like environment? This includes aspects like ease of scaling up and down instances.
 
 By combining these quantitative and qualitative measures, we aim to provide a holistic evaluation of our Communication Backbone, not only demonstrating its technical superiority in terms of scalability and performance for IoT cloud applications but also highlighting its practical advantages for real-world deployments.
+
+## DEVELOPMENT
+
+### General Architecture
+
+The Communication Backbone developed for this thesis consists of several components:
+
+![simplified architecture](/thesis/static/simplified_arch.png)
+
+#### Task Queue
+
+Firstly, the `task_queue` is responsible for delivering tasks to our `task_worker`. Tasks are actions to be executed in the IoT devices (ESLs, in our case). The utilization of a queue here is paramount, primarily because these actions can be inherently long-running, often with an estimated timeout of around three minutes per task.
+
+This potential for delays makes a synchronous request-reply model impractial and innefficient for the initial command dispatch. If the calling application were to wait synchronously for three minutes for each ESL action to complete, its threads would be tied up, quickly exhausting resources and severely limiting the system's overall throughput and responsiveness. This is particularly problematic in a large-scale IoT environment where thousands or tens of thousands of simultaneous commands might be issued (e.g., updating prices across an entire store).
+
+By leveraging asynchronous communication via the task_queue, the producer (application that dispatches the tasks) can immediately hand off the task to the queue and consider its part of the transaction complete. It does not need to block and wait for the ESL to process the command. The queue then acts as a durable buffer, ensuring that the task is persisted and will eventually be delivered to an available task_worker, even if the worker or the IoT device experiences temporary disconnections or processing delays. This decoupling allows the producer to quickly move on to process other commands or serve other users, dramatically improving the perceived responsiveness and overall system capacity. It also provides inherent resilience: if a task_worker fails, the tasks remain in the queue to be picked up by another worker once available, preventing data loss and ensuring eventual consistency.
+
+Furthermore, a key advantage of using a robust message queue is its ability to guarantee specific delivery semantics. In our model, this is extremely important, as we want to guarantee at-least-once execution semantics for critical operations like price updates. This means that once a price update command is sent to the task_queue, the system ensures it will be processed and executed by a task_worker at least one time. This guarantee is vital for business-critical operations like price synchronization, as it prevents scenarios where a price update might be lost due to transient network issues, worker failures, or device unresponsiveness. The queue achieves this through mechanisms such as message acknowledgments: a message is only considered processed and removed from the queue after the task_worker explicitly acknowledges its successful handling, or after a configurable timeout, upon which it can be redelivered to another worker (KLEPPMANN, M. 2017). This robustness is non-negotiable for ensuring that all prices displayed on ESLs are consistently and accurately updated, directly addressing a core business requirement.
+
+#### Business Layer (Task Worker)
+
+The task_worker is responsible for consuming messages (tasks) from the task_queue. Crucially, the task_worker encapsulates the core business logic associated with processing these commands. This includes interacting with databases (e.g., to fetch detailed product information for a price update, log the command's status, and update the device's state) and any other external services required to fulfill the task. Upon receiving a task and initial checks and processing is completed, the task_worker makes an RPC request to the Communication Layer of our system. After the replies from the Communication Layer, the task_worker treats the results accordingly by notifying clients and updating the databases.
+
+#### Communication Layer (Router)
+
+The Communication Layer (Router) is responsible for everything regarding the addressing and messaging the individual devices. It connects to the subsequest MQTT Layer and holds the Communication Backbone logic. It allows the task_worker to be completely technology and vendor independant (when referring to the IoT devices).
+
+Since the designed IoT devices communicate in Bluetooth Low Energy (BLE), there are intermediate Gateway Devices to "translate" requests to BLE. To reach a target device (ESL), the intermediate gateway hop also needs to be addressed, as such, the Communcation Layer is also responsible for identifying the correct gateway that the ESL is currently addressable to. This identification is dynamic and crucial for reliable communication; for any given ESL, there might be multiple gateways within its BLE range. The Communication Layer must intelligently determine the optimal gateway to route the request through, often by selecting the gateway reporting the strongest Received Signal Strength Indicator (RSSI) from the ESL. This ensures the command is sent via the most stable and reliable path, minimizing signal loss and improving command success rates. This also saves us from needing more complex methods for reaching BLE signal stability, wich would be too complex considering the dynamic environment inside the construction stores (THALJAOUI, A. et al. 2015).
+
+This Communication Layer inherently represents the primary scalability challenge for the entire system. While the task_queue and task_workers can scale horizontally with relative ease by adding more instances, the Communication Layer faces unique challenges in maintaining device connectivity and command routing efficiency across a massive and dynamic network of IoT gateways and devices. In traditional architectures, the load-balancing done by MQTT would not allow a system to simply scale horizontally, as the nodes that recieve the RPC request may not be the same ones that recieve the response from the device. This "misrouting" of replies would lead to responses being discarded as unrelated or "junk messages," effectively breaking the critical request-reply pattern essential for reliable actuator control and feedback. Our Communication Layer's specialized logic directly addresses this limitation by ensuring response correlation and proper routing, which is fundamental to overcoming this scalability hurdle.
+
+Any bottleneck or inefficiency within this intricate layer can propagate throughout the entire system, severely hindering the overall scalability, responsiveness, and reliability of the large-scale IoT application.
+
+### Communication Backbone: RPC via HTTP
+
+By default, the exemplified architecture will make a simple RPC via an HTTP method, this will be our baseline system. The router entity exists to enable the task_worker to be completely device vendor/technology agnostic. It (in our system) communicates with the gateways via MQTT, but this separation allows us to quickly modify it in the future.
+
+![rpc via http](/thesis/static/rpc_via_http.png)
+
+With the following sequence diagram:
+
+![rpc via http - sequence diagram](/thesis/static/seq_diagram_http_rpc.png)
+
+Note that sinse so that the router can communicate with MQTT, it needs the GW_MAC. This means we would need a single router per gateway (with a ratio of around 1 gateway to every 5 thousand ESLs). This poses as the first limitation of scalability.
+
+#### Limitations of this system
+
+Although the router routines communicate with simple Iter-Process Communication (IPC) and are thus, faster than network calls, the issue of not being able to communicate with multiple nodes is the main pitfall of this "traditional" system.
+
+A first-look alternative to this would be to simply listen on all gateway macs for the ACK Response. However this is too unreliable, let's take a look:
+
+Firstly, since MQTT load-balancing is offered in a Round-Robin manner, all listeners to a topic share the messages one-by-one.
+
+![round-robin](/thesis/static/round-robin.png)
+
+The problem arises from the fact that there is no guarantee that the same router_node that made the action request will be the same one that recieves reponse message.
+
+![round-robin-issue - sequence diagram](/thesis/static/seq_diagram_http_rpc_issue.png)
+
+Walking though this sequence diagram we see:
+
+1. The Task Worker establishes a connection to Router 0 and sends the RPC request.
+2. Router 0 publishes the message on the `/gw/GW_MAC/action` topic in MQTT.
+3. MQTT forwards the reply to the Device Gateway.
+4. The Device Gateway responds with the ACK to MQTT.
+5. MQTT returns the ACK to Router 1 (as it is load-balanced).
+6. Router 1 has no way of replying to the Task Worker as there is no established connection.
+
+This poses as the first limitation of scalability and redundency, locking the elasticity of the system as there must always be exactly one instance of the router running per gateway.
+
+The current system faces a critical scalability limitation due to the tight coupling between router nodes and device gateways, where HTTP/RPC over MQTT relies on the same router instance processing both the request and response. Since MQTT load-balances responses across routers in a round-robin fashion, there is no guarantee that the router receiving the reply will be the one that initiated the request, leading to dropped acknowledgments and forcing a 1:1 router-gateway binding. This constraint severely restricts horizontal scaling, as each gateway must be statically assigned to a single router, even during traffic spikes.
+
+To resolve this, a message queue should be introduced to decouple request handling from response routing. In this model, task workers publish requests to a dedicated request queue, which any available router can consume. Responses are then directed to a reply queue using a unique correlation ID, ensuring they return to the originating worker—regardless of which router processed the request. This approach eliminates the need for sticky sessions, allows multiple routers to share the load for a single gateway, and provides buffering during traffic surges, preventing message loss. Additionally, queues enable auto-scaling based on backlog depth, further improving elasticity.
+
+By adopting this architecture, the system gains true horizontal scalability, fault tolerance, and resilience against burst workloads, while removing the restrictive 1:1 router-gateway dependency. Industry best practices, such as AWS’s recommendation for decoupling microservices with SQS and Microsoft’s asynchronous request-reply pattern, strongly support this design for high-throughput, distributed systems. As such, the brittle system now becomes resilient and scalable (KLEPPMANN, 2017).
+
+### Communication Backbone: RPC via Distributed Queues
+
+# TODO: here
