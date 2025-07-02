@@ -335,3 +335,5 @@ func main() {
 ```
 
 ## HOMOLOGATION
+
+Firstly, we need to set the baseline system performance numbers.
