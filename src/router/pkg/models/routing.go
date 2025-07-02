@@ -20,6 +20,15 @@ func (m RoutingMessage) Dump() []byte {
 	return jsonData
 }
 
+func (m RoutingMessage) FromMqtt(payload []byte) (RoutingMessage, error) {
+	var reply RoutingMessage
+	err := json.Unmarshal(payload, &reply)
+	if err != nil {
+		return RoutingMessage{}, err
+	}
+	return reply, nil
+}
+
 type RoutingReply struct {
 	DeviceMac string `json:"deviceMac"` // net.HardwareAddr
 	Ack       bool   `json:"ack"`
