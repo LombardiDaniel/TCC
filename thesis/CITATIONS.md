@@ -42,3 +42,6 @@ MSR-TR-95-56, December 1995.
 
 [e-book] Decouple messaging pattern - AWS Prescriptive Guidance. Available at: <https://docs.aws.amazon.com/prescriptive-guidance/latest/modernization-integrating-microservices/decouple-messaging.html>.
 ‌
+[blogpost] MADAPPA, S. Ephemeral Volatile Caching in the cloud. Available at: <https://netflixtechblog.com/ephemeral-volatile-caching-in-the-cloud-8eba7b124589>.
+
+‌

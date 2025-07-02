@@ -49,6 +49,30 @@ func onMsgCallback(payload []byte) error {
 }
 
 func init() {
+	conn, err := amqp.Dial("amqp://guest:guest@rbmq:5672/")
+	if err != nil {
+		panic(err)
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		panic(err)
+	}
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "redis:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	s := redisClient.Ping(context.Background())
+	if err := s.Err(); err != nil {
+		panic(err)
+	}
+
+	messagingService = services.NewMessagingService(ch, nil)
+	sharedMemService = services.NewSharedMemoryService(redisClient)
+
 	broker, _ := url.Parse("tcp://mqtt:1883")
 	clientID := "bck" + uuid.NewString()
 
@@ -82,30 +106,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
-	conn, err := amqp.Dial("amqp://guest:guest@rbmq:5672/")
-	if err != nil {
-		panic(err)
-	}
-
-	ch, err := conn.Channel()
-	if err != nil {
-		panic(err)
-	}
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "redis:6379",
-		Password: "",
-		DB:       0,
-	})
-
-	s := redisClient.Ping(context.Background())
-	if err := s.Err(); err != nil {
-		panic(err)
-	}
-
-	messagingService = services.NewMessagingService(ch, nil)
-	sharedMemService = services.NewSharedMemoryService(redisClient)
 }
 
 func main() {

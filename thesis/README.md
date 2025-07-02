@@ -216,7 +216,7 @@ Note that sinse so that the router can communicate with MQTT, it needs the GW_MA
 
 #### Limitations of this system
 
-Although the router routines communicate with simple Iter-Process Communication (IPC) and are thus, faster than network calls, the issue of not being able to communicate with multiple nodes is the main pitfall of this "traditional" system.
+Although the router routines communicate with simple Inter-Process Communication (IPC) and are, faster than network calls, the issue of not being able to communicate with multiple nodes is the main pitfall of this "traditional" system.
 
 A first-look alternative to this would be to simply listen on all gateway macs for the ACK Response. However this is too unreliable, let's take a look:
 
@@ -239,12 +239,99 @@ Walking though this sequence diagram we see:
 
 This poses as the first limitation of scalability and redundency, locking the elasticity of the system as there must always be exactly one instance of the router running per gateway.
 
-The current system faces a critical scalability limitation due to the tight coupling between router nodes and device gateways, where HTTP/RPC over MQTT relies on the same router instance processing both the request and response. Since MQTT load-balances responses across routers in a round-robin fashion, there is no guarantee that the router receiving the reply will be the one that initiated the request, leading to dropped acknowledgments and forcing a 1:1 router-gateway binding. This constraint severely restricts horizontal scaling, as each gateway must be statically assigned to a single router, even during traffic spikes.
-
-To resolve this, a message queue should be introduced to decouple request handling from response routing. In this model, task workers publish requests to a dedicated request queue, which any available router can consume. Responses are then directed to a reply queue using a unique correlation ID, ensuring they return to the originating worker—regardless of which router processed the request. This approach eliminates the need for sticky sessions, allows multiple routers to share the load for a single gateway, and provides buffering during traffic surges, preventing message loss. Additionally, queues enable auto-scaling based on backlog depth, further improving elasticity.
-
-By adopting this architecture, the system gains true horizontal scalability, fault tolerance, and resilience against burst workloads, while removing the restrictive 1:1 router-gateway dependency. Industry best practices, such as AWS’s recommendation for decoupling microservices with SQS and Microsoft’s asynchronous request-reply pattern, strongly support this design for high-throughput, distributed systems. As such, the brittle system now becomes resilient and scalable (KLEPPMANN, 2017).
+The current system faces a critical scalability limitation due to the tight coupling between router nodes and device gateways, where HTTP/RPC over MQTT relies on the same router instance processing both the request and response. Since MQTT load-balances responses across routers in a round-robin fashion, there is no guarantee that the router receiving the reply will be the one that initiated the request, leading to dropped acknowledgments and forcing a 1:1 router-gateway binding. This constraint severely restricts horizontal scaling, as each gateway must be statically assigned to a single router, during both traffic spikes and at idleling.
 
 ### Communication Backbone: RPC via Distributed Queues
 
-# TODO: here
+By considering the limitations in the initially escribed system, we must analyse both the system requirements and the issues with encourntered in the baseline backbone.
+
+Firstly we need to resolve the tight coupling of the systems. To resolve this, a message queue should be introduced to decouple request handling from response routing. In this model, task workers publish requests to a dedicated request queue, which any available router can consume. Responses are then directed to a reply queue using a unique correlation ID, ensuring they return to the originating worker—regardless of which router processed the request. This approach eliminates the need for sticky sessions, allows multiple routers to share the load for a single gateway, and provides buffering during traffic surges, preventing message loss. Additionally, queues enable auto-scaling based on backlog depth, further improving elasticity.
+
+By adopting this architecture, the system gains true horizontal scalability, fault tolerance, and resilience against burst workloads, while removing the restrictive 1:1 router-gateway dependency. Industry best practices, such as AWS’s recommendation for decoupling microservices with SQS and Microsoft’s asynchronous request-reply pattern, strongly support this design for high-throughput, distributed systems. As such, the brittle system now becomes resilient and scalable (KLEPPMANN, 2017).
+
+The system is built using Redis and RabbitMQ (RBMQ). This is done so that the routing messages can be stored using only in-memory data structures as to reduce the latency overhead from the added network calls. Furthermore, since each action request references a single ESL, redis allows up to lookup the correlation ID for each ESL's MAC in O(1) time complexity. Redis also has many built-in features that support short-lived, ephemeral data in a shared and easily scalable environment. Also importantly, using in-memory Redis also allows the system to better respont to sudden request spikes more effectively (MADAPPA, 2012).
+
+Furthermore, Redis and RBMQ Time to Live (TTL) functionality fits perfectly the short-lived Correlation IDs. As they are inherently temporary; once a response has been successfully routed back to the originating worker or no response is generated, the Correlation ID server no further purpose. This also makes the process of cleaning up the Correlation IDs much simpler on the router's part, as it only needs to set the appropriate TTL when the request is recieved. On the task worker's part, when making the RPC request, it needs to create an ephemeral queue in RBMQ, that will be purged when the connection is closed.
+
+This creates a highly efficient and self-managing system for decoupling the task request handling from the response routing.
+
+Now the task worker interacts with the RPC mechanism as:
+
+![rpc via queue](/thesis/static/rpc_via_queue.png)
+
+Changing the overall architecture to:
+
+![full architecture](/thesis/static/full_arch.png)
+
+By decoupling the task workers from the routers, we now can reate a forward (fwd) router and a back (bck) router services to communicate with MQTT, simplifying the code and software architecture.
+
+> The routing tables referenced by the routers are also saved to Redis. The ESLs broadcast a signal to all Gateway Devices in range every couple of seconds. The Gateway Devices publish these messages to MQTT with the BLE RSSI of the ESL connection. With this, we are able to build a routing rable in Redis to utilize the gateway with better device communication to the designated ESL. This is also saved as a Map of the Key being the ESL's MAC address and it's Value being the MAC address of the Gateway Device with the strongest connection to that ESL, also allowing up to efficiently manage all ESLs with Redis O(1) lookup complexity.
+
+With this, we have the following two sequence diagrams, the former from the task worker utilizing the FWD Router, and the latter from the perspective of the BCK Router utilization.
+
+![FWD Router sequence diagram](/thesis/static/seq_diagram_fwd_router.png)
+
+![BCK Router sequence diagram](/thesis/static/seq_diagram_bck_router.png)
+
+With this, all messages are always routed back to the requesting node, independently of the number of replicas of the routers, using the Correlation ID stored in Redis as service discovery to correctly route the response to the task_worker, making for a scalable and reliable system.
+
+By leveraging the proposed architecture, all messages are consistently routed back to their originating task worker, irrespective of the number of router replicas in the system. This reliable redirection is achieved by utilizing the Correlation ID, temporarily stored within Redis, which effectively acts as a dynamic service discovery mechanism. Consequently, this design establishes a highly scalable and robust system capable of handling increased loads and maintaining operational integrity even with fluctuating service demands.
+
+The system was completely developed in Golang (Go), as it's design aimed to develop distributed systems brings in loads of built-in features that aid with IPC such as channels, Goroutines and more. Note that for load balancing, we used 2 different packages for MQTT interaction, as the official paho image does not support shared subscriptions as it's an MQTTv5 feature, where the paho package only supports MQTTv3.
+
+The pseudocode for the task worker:
+
+```go
+// task_worker
+func main() {
+    for task := range rabbitMqMsgsChan {
+        esls := dbService.BusinessLogic(tasks)
+
+        var msgs []models.RoutingMessage
+        for esl := range esls {
+            m := models.RoutingMessage{}.FromEsl(esl)
+            msgs = append(msgs, m)
+        }
+
+        reps := commsBakbone.Forward(msgs) // This method waits for replies
+        if len(reps) != len(macs) {
+            return errors.New("not all devices replied")
+        }
+    }
+}
+```
+
+The pseudocode for the fwd router:
+
+```go
+// fwd_router
+func main() {
+    for routingMsg := range rabbitMqMsgsChan {
+        sharedMem.Save(routingMsg.EslMac, routingMsg.CorrelationId)
+
+        gwMac := dbService.GetRoute(routingMsg.EslMac)
+        topic := "/gw/"+gwMac+"/action"
+
+        mqtt.Publish(topic, routingMsg)
+    }
+}
+```
+
+The pseudocode for the bck router:
+
+```go
+// bck_router
+
+func onMsgCallback(rep models.RoutingReply) {
+    correlationId := sharedMemService.RepKey(rep.EslMac)
+	messagingService.Reply(correlationId, rep)
+}
+
+func main() {
+    topic := "/gw/+/response"
+    mqtt.SetCallback("$share/router-bck-group/", onMsgCallback)
+    mqtt.Start() // Hangs
+}
+```
+
+## HOMOLOGATION
