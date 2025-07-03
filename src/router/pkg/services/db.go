@@ -8,5 +8,6 @@ type DBService interface {
 type DBServiceMock struct{}
 
 func (db *DBServiceMock) GetRoute(deviceMac string) (string, error) {
-	return "/gw/GW_MAC/action", nil
+	// return "/gw/GW_MAC/action", nil
+	return "/gw/ac133fac133f/action", nil
 }

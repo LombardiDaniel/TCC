@@ -43,6 +43,5 @@ Example reply:
 ```sh
 docker run -ti --network tcc_default eclipse-mosquitto:1.6.15 ash
 
-mosquitto_pub -h mqtt -t /gw/GW_MAC/response -m {\"deviceMac\":\"000000000001\",\"ack\":true}
-mosquitto_pub -h mqtt -t /gw/GW_MAC/response -m {\"deviceMac\":\"000000000002\",\"ack\":true}
+mosquitto_pub -h mqtt -t /gw/GW_MAC/response -m {\"deviceMac\":\"000000000001\",\"ack\":true} && mosquitto_pub -h mqtt -t /gw/GW_MAC/response -m {\"deviceMac\":\"000000000002\",\"ack\":true}
 ```

@@ -11,10 +11,6 @@ COPY ./ ./
 
 RUN go build -o /bin/main main.go
 
-# go build -o bin/app1 ./app1
-# go build -o bin/app2 ./app2
-
-
 #### - SERVER - ####
 FROM alpine:3.21.3 AS server
 

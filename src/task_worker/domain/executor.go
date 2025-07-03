@@ -1,12 +1,21 @@
 package domain
 
 import (
+	"context"
 	"errors"
 	"log"
+	"strings"
+	"time"
 
+	"github.com/lombardidaniel/tcc/worker/common"
 	"github.com/lombardidaniel/tcc/worker/iot"
 	"github.com/lombardidaniel/tcc/worker/models"
 	"github.com/lombardidaniel/tcc/worker/services"
+)
+
+var (
+	isCustomBackbone bool   = strings.ToLower(common.GetEnvVarDefault("CUSTOM_BACKBONE", "true")) == "true"
+	metricFlagStr    string = "custom_backbone"
 )
 
 type Executor interface {
@@ -19,13 +28,18 @@ type executorImpl struct {
 	backbone         iot.Backbone
 	dbService        services.DBService
 	messagingService services.MessagingService
+	telemetryService services.TelemetryService
 }
 
-func NewExecutor(backbone iot.Backbone, dbService services.DBService, messagingService services.MessagingService) Executor {
+func NewExecutor(backbone iot.Backbone, dbService services.DBService, messagingService services.MessagingService, telemetryService services.TelemetryService) Executor {
+	if !isCustomBackbone {
+		metricFlagStr = "http_backbone"
+	}
 	return &executorImpl{
 		backbone:         backbone,
 		dbService:        dbService,
 		messagingService: messagingService,
+		telemetryService: telemetryService,
 	}
 }
 
@@ -48,11 +62,17 @@ func (e *executorImpl) Execute(task models.Task) error {
 		msgs = append(msgs, m)
 	}
 
+	initTs := time.Now()
 	// Wait for replies
 	reps, err := e.backbone.Forward(msgs)
 	if err != nil {
 		return err
 	}
+	delta := time.Since(initTs)
+
+	e.telemetryService.RecordMetric(context.TODO(), "deltaTime_"+metricFlagStr, float64(delta.Milliseconds()), map[string]string{"unit": "ms"})
+
+	// TODO: tb colocar dado, pra marcar taxa de acerto e mostrar que a outra solução não escala!!! => len(reps)
 
 	for _, rep := range reps {
 		log.Printf("Received ACK from: %s\n", rep.DeviceMac)

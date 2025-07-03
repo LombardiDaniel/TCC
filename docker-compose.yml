@@ -8,6 +8,8 @@ services:
       REDIS_HOST: redis
       MQTT_HOST: mqtt
       CUSTOM_BACKBONE: true
+    env_file:
+      - .env
     depends_on:
       rbmq:
         condition: service_healthy
@@ -16,7 +18,7 @@ services:
       mqtt:
         condition: service_started
     deploy:
-      replicas: 2
+      replicas: 1
     restart: always
 
   router_fwd:

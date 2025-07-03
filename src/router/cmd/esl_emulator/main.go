@@ -30,7 +30,7 @@ var (
 func onMsgCallback(topic string, payload []byte) error {
 	routingMsg, err := models.RoutingMessage{}.FromMqtt(payload)
 	if err != nil {
-		log.Printf("error unmarshling the request: %s", string(payload))
+		log.Printf("error unmarshling the RoutingMessage request: %s", string(payload))
 		return err
 	}
 
@@ -39,8 +39,11 @@ func onMsgCallback(topic string, payload []byte) error {
 		Ack:       true,
 	}
 
+	// fmt.Println(len(topic))
+	// fmt.Println(topic)
+
 	if len(topic) != 23 {
-		log.Printf("error unmarshling the request: %s", string(payload))
+		log.Printf("invalid topic: %s", string(payload))
 		return errors.New("unrecognized MAC")
 	}
 
