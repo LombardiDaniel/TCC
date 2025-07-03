@@ -49,10 +49,13 @@ func (c *CounterMongoAsyncImpl) Upload() error {
 	c.val = 0
 	c.valLock.Unlock()
 
-	update := bson.M{"value": bson.M{"$inc": v}}
+	update := bson.M{"$inc": bson.M{"value": v}}
 	upsert := true
 	_, err := c.metricsCol.UpdateOne(context.TODO(), filter, update, &options.UpdateOptions{Upsert: &upsert})
-	return errors.Join(err, errors.New("could not increment counter"))
+	if err != nil {
+		return errors.Join(err, errors.New("could not increment counter"))
+	}
+	return err
 }
 
 func NewTelemetryServiceMongoAsyncImpl(mongoClient *mongo.Client, metricsCol, eventsCol *mongo.Collection, batchInsertSize uint32) TelemetryService {
@@ -68,6 +71,8 @@ func NewTelemetryServiceMongoAsyncImpl(mongoClient *mongo.Client, metricsCol, ev
 }
 
 func (s *TelemetryServiceMongoAsyncImpl) GetCounter(ctx context.Context, metricName string, tags map[string]string) (Counter, error) {
+	tags["__type__"] = "counter"
+
 	c := &CounterMongoAsyncImpl{
 		metricsCol: s.metricsCol,
 		metricName: metricName,

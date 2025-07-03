@@ -16,6 +16,7 @@ import (
 var (
 	isCustomBackbone bool   = strings.ToLower(common.GetEnvVarDefault("CUSTOM_BACKBONE", "true")) == "true"
 	metricFlagStr    string = "custom_backbone"
+	counter          services.Counter
 )
 
 type Executor interface {
@@ -35,6 +36,9 @@ func NewExecutor(backbone iot.Backbone, dbService services.DBService, messagingS
 	if !isCustomBackbone {
 		metricFlagStr = "http_backbone"
 	}
+
+	counter, _ = telemetryService.GetCounter(context.Background(), "successfull_"+metricFlagStr, map[string]string{})
+
 	return &executorImpl{
 		backbone:         backbone,
 		dbService:        dbService,
@@ -70,9 +74,8 @@ func (e *executorImpl) Execute(task models.Task) error {
 	}
 	delta := time.Since(initTs)
 
-	e.telemetryService.RecordMetric(context.TODO(), "deltaTime_"+metricFlagStr, float64(delta.Milliseconds()), map[string]string{"unit": "ms"})
-
-	// TODO: tb colocar dado, pra marcar taxa de acerto e mostrar que a outra solução não escala!!! => len(reps)
+	e.telemetryService.RecordMetric(context.Background(), "deltaTime_"+metricFlagStr, float64(delta.Milliseconds()), map[string]string{"unit": "ms"})
+	counter.Increment(uint64(len(reps)))
 
 	for _, rep := range reps {
 		log.Printf("Received ACK from: %s\n", rep.DeviceMac)
