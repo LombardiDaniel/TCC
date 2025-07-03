@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lombardidaniel/tcc/router/pkg/models"
-	"github.com/lombardidaniel/tcc/router/pkg/services"
 
 	mqtt "github.com/eclipse/paho.golang/autopaho"
 	"github.com/eclipse/paho.golang/paho"
@@ -21,10 +20,6 @@ var (
 	ctx context.Context
 
 	mqttManager *mqtt.ConnectionManager
-	// pubConn autopaho.
-
-	messagingService services.MessagingService
-	sharedMemService services.SharedMemoryService
 )
 
 func onMsgCallback(topic string, payload []byte) error {
@@ -82,7 +77,7 @@ func init() {
 			})
 		},
 		OnConnectError: func(err error) {
-			fmt.Printf("Error connecting to broker: %v\n", err)
+			log.Panicf("Error connecting to broker: %v\n", err)
 		},
 		ClientConfig: paho.ClientConfig{
 			ClientID: clientID,

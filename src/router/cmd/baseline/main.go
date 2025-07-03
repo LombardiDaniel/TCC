@@ -66,7 +66,7 @@ func init() {
 					ackChan, exists := ackChans[rep.DeviceMac]
 					ackChansMu.Unlock()
 					if !exists {
-						slog.Error(fmt.Sprintf("mac: %s timedout", rep.DeviceMac))
+						slog.Error(fmt.Sprintf("mac: %s recieved before chan creation", rep.DeviceMac))
 						return false, nil
 					}
 
@@ -98,13 +98,7 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("Received message: %+v\n", msg)
-	t, _ := dbService.GetRoute(msg.DeviceMac)
-	_, err = mqttManager.Publish(r.Context(), &paho.Publish{
-		QoS:     1,
-		Topic:   "/gw/" + t + "/action",
-		Payload: msg.Dump(),
-	})
+	fmt.Printf("Received POST request: %+v\n", msg)
 	if err != nil {
 		fmt.Printf("Error forwarding message: %s", err)
 		http.Error(w, "BadGateway", http.StatusBadGateway)
@@ -113,8 +107,16 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 
 	ackChan := make(chan bool, 10)
 	ackChansMu.Lock()
+	fmt.Printf("created chan %s\n", msg.DeviceMac)
 	ackChans[msg.DeviceMac] = ackChan
 	ackChansMu.Unlock()
+
+	t, _ := dbService.GetRoute(msg.DeviceMac)
+	_, err = mqttManager.Publish(r.Context(), &paho.Publish{
+		QoS:     1,
+		Topic:   t,
+		Payload: msg.Dump(),
+	})
 
 	select {
 	case ack := <-ackChan:
@@ -122,10 +124,11 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("ACK received\n"))
 			return
-		} else {
-			http.Error(w, "NACK received", http.StatusBadGateway)
-			return
 		}
+
+		http.Error(w, "NACK received", http.StatusBadGateway)
+		return
+
 	case <-time.After(60 * time.Second):
 		http.Error(w, "Timeout waiting for ACK", http.StatusGatewayTimeout)
 	}

@@ -3,6 +3,7 @@ package iot
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"sync"
 
@@ -32,6 +33,10 @@ func (b *BackboneRestImpl) send(msg models.RoutingMessage) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return errors.New("nacked")
+	}
 
 	return nil
 }
