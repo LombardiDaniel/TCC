@@ -30,7 +30,7 @@ services:
       mqtt:
         condition: service_started
     deploy:
-      replicas: 0
+      replicas: 1
     restart: always
 
   # router_fwd:

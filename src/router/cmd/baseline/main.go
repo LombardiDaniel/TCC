@@ -22,11 +22,12 @@ var (
 	dbService        services.DBService
 	messagingService services.MessagingService
 
-	ackChans sync.Map // MAC: chan[ACK]// map[string]chan bool // MAC: chan[ACK]
+	ackChansMu sync.Mutex
+	ackChans   map[string]chan bool // MAC: chan[ACK]
 )
 
 func init() {
-	// ackChans = make(map[string]chan bool)
+	ackChans = make(map[string]chan bool)
 
 	broker := "tcp://mqtt:1883" // Replace with your broker URL
 	clientID := "fwd" + uuid.NewString()
@@ -50,13 +51,13 @@ func init() {
 			return
 		}
 
-		// ackChan, exists := ackChans[rep.DeviceMac]
-		ackChanVal, exists := ackChans.Load(rep.DeviceMac)
+		ackChansMu.Lock()
+		ackChan, exists := ackChans[rep.DeviceMac]
+		ackChansMu.Unlock()
 		if !exists {
 			slog.Error(fmt.Sprintf("mac: %s timedout", rep.DeviceMac))
 			return
 		}
-		ackChan := ackChanVal.(chan bool)
 
 		ackChan <- rep.Ack
 	})
@@ -89,7 +90,9 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ackChan := make(chan bool, 10)
-	ackChans.Store(msg.DeviceMac, ackChan)
+	ackChansMu.Lock()
+	ackChans[msg.DeviceMac] = ackChan
+	ackChansMu.Unlock()
 
 	select {
 	case ack := <-ackChan:
