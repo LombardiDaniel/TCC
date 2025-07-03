@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -21,11 +22,11 @@ var (
 	dbService        services.DBService
 	messagingService services.MessagingService
 
-	ackChans map[string]chan bool // MAC: chan[ACK]
+	ackChans sync.Map // MAC: chan[ACK]// map[string]chan bool // MAC: chan[ACK]
 )
 
 func init() {
-	ackChans = make(map[string]chan bool)
+	// ackChans = make(map[string]chan bool)
 
 	broker := "tcp://mqtt:1883" // Replace with your broker URL
 	clientID := "fwd" + uuid.NewString()
@@ -33,6 +34,7 @@ func init() {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(broker)
 	opts.SetClientID(clientID)
+	opts.SetOrderMatters(false)
 
 	mqttClient = mqtt.NewClient(opts)
 	if token := mqttClient.Connect(); token.WaitTimeout(10*time.Second) && token.Error() != nil {
@@ -48,10 +50,13 @@ func init() {
 			return
 		}
 
-		ackChan, exists := ackChans[rep.DeviceMac]
+		// ackChan, exists := ackChans[rep.DeviceMac]
+		ackChanVal, exists := ackChans.Load(rep.DeviceMac)
 		if !exists {
+			slog.Error(fmt.Sprintf("mac: %s timedout", rep.DeviceMac))
 			return
 		}
+		ackChan := ackChanVal.(chan bool)
 
 		ackChan <- rep.Ack
 	})
@@ -83,17 +88,20 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ackChans[msg.DeviceMac] = make(chan bool)
+	ackChan := make(chan bool, 10)
+	ackChans.Store(msg.DeviceMac, ackChan)
 
 	select {
-	case ack := <-ackChans[msg.DeviceMac]:
+	case ack := <-ackChan:
 		if ack {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("ACK received\n"))
+			return
 		} else {
 			http.Error(w, "NACK received", http.StatusBadGateway)
+			return
 		}
-	case <-time.After(30 * time.Second):
+	case <-time.After(60 * time.Second):
 		http.Error(w, "Timeout waiting for ACK", http.StatusGatewayTimeout)
 	}
 }

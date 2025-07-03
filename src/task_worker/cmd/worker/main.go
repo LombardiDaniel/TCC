@@ -48,6 +48,11 @@ func init() {
 		panic(err)
 	}
 
+	err = ch.Qos(1, 0, false)
+	if err != nil {
+		panic(err)
+	}
+
 	q, err := ch.QueueDeclare(
 		"task_queue", // name
 		true,         // durable
