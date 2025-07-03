@@ -1,15 +1,16 @@
 services:
-  # dispatcher:
-  #   build:
-  #     context: src/task_worker
-  #     dockerfile: Dockerfile
-  #   command: ./dispatcher 100
-  #   environment:
-  #     RABBITMQ_HOST: rbmq
-  #   depends_on:
-  #     rbmq:
-  #       condition: service_healthy
-  #   restart: on-failure
+  dispatcher:
+    build:
+      context: src/task_worker
+      dockerfile: Dockerfile
+    command: ./dispatcher 1000
+    environment:
+      RABBITMQ_HOST: rbmq
+    depends_on:
+      rbmq:
+        condition: service_healthy
+    restart: on-failure
+
   task_worker:
     build:
       context: src/task_worker
@@ -30,7 +31,7 @@ services:
       mqtt:
         condition: service_started
     deploy:
-      replicas: 1
+      replicas: 10
     restart: always
 
   # router_fwd:
