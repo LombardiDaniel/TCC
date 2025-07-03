@@ -1,26 +1,29 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
-	"os"
+	"net/url"
 	"sync"
 	"time"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	mqtt "github.com/eclipse/paho.golang/autopaho"
+	"github.com/eclipse/paho.golang/paho"
 	"github.com/google/uuid"
 	"github.com/lombardidaniel/tcc/router/pkg/models"
 	"github.com/lombardidaniel/tcc/router/pkg/services"
 )
 
 var (
-	mqttClient mqtt.Client
+	err error
 
-	dbService        services.DBService
-	messagingService services.MessagingService
+	mqttManager *mqtt.ConnectionManager
+
+	dbService services.DBService
 
 	ackChansMu sync.Mutex
 	ackChans   map[string]chan bool // MAC: chan[ACK]
@@ -29,41 +32,56 @@ var (
 func init() {
 	ackChans = make(map[string]chan bool)
 
-	broker := "tcp://mqtt:1883" // Replace with your broker URL
-	clientID := "fwd" + uuid.NewString()
+	broker, _ := url.Parse("tcp://mqtt:1883")
+	clientID := "bck" + uuid.NewString()
 
-	opts := mqtt.NewClientOptions()
-	opts.AddBroker(broker)
-	opts.SetClientID(clientID)
-	opts.SetOrderMatters(false)
+	responseTopic := "/gw/+/response"
+	cfg := mqtt.ClientConfig{
+		BrokerUrls:        []*url.URL{broker},
+		KeepAlive:         30,
+		ConnectRetryDelay: 5 * time.Second,
+		OnConnectionUp: func(cm *mqtt.ConnectionManager, ca *paho.Connack) {
+			fmt.Println("Connected to MQTT broker")
+			cm.Subscribe(context.Background(), &paho.Subscribe{
+				Subscriptions: []paho.SubscribeOptions{{
+					Topic: "$share/router-bck-group/" + responseTopic,
+					QoS:   byte(1),
+				}},
+			})
+		},
+		OnConnectError: func(err error) {
+			fmt.Printf("Error connecting to broker: %v\n", err)
+		},
+		ClientConfig: paho.ClientConfig{
+			ClientID: clientID,
+			OnPublishReceived: []func(paho.PublishReceived) (bool, error){
+				func(pr paho.PublishReceived) (bool, error) {
+					rep, err := models.RoutingReply{}.FromMqtt(pr.Packet.Payload)
+					if err != nil {
+						slog.Error("could not parse message")
+						return false, nil
+					}
 
-	mqttClient = mqtt.NewClient(opts)
-	if token := mqttClient.Connect(); token.WaitTimeout(10*time.Second) && token.Error() != nil {
-		fmt.Printf("Error connecting to broker: %v\n", token.Error())
-		os.Exit(1)
+					ackChansMu.Lock()
+					ackChan, exists := ackChans[rep.DeviceMac]
+					ackChansMu.Unlock()
+					if !exists {
+						slog.Error(fmt.Sprintf("mac: %s timedout", rep.DeviceMac))
+						return false, nil
+					}
+
+					ackChan <- rep.Ack
+					return true, nil
+				},
+			},
+		},
 	}
-	fmt.Println("Connected to MQTT broker")
-
-	mqttClient.Subscribe("/gw/+/response", 1, func(c mqtt.Client, m mqtt.Message) {
-		rep, err := models.RoutingReply{}.FromMqtt(m.Payload())
-		if err != nil {
-			slog.Error("could not parse message")
-			return
-		}
-
-		ackChansMu.Lock()
-		ackChan, exists := ackChans[rep.DeviceMac]
-		ackChansMu.Unlock()
-		if !exists {
-			slog.Error(fmt.Sprintf("mac: %s timedout", rep.DeviceMac))
-			return
-		}
-
-		ackChan <- rep.Ack
-	})
+	mqttManager, err = mqtt.NewConnection(context.Background(), cfg)
+	if err != nil {
+		panic(err)
+	}
 
 	dbService = &services.DBServiceMock{}
-	messagingService = services.NewMessagingService(nil, &mqttClient)
 }
 
 func main() {
@@ -82,7 +100,11 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("Received message: %+v\n", msg)
 	t, _ := dbService.GetRoute(msg.DeviceMac)
-	err := messagingService.Forward(t, msg)
+	_, err = mqttManager.Publish(r.Context(), &paho.Publish{
+		QoS:     1,
+		Topic:   "/gw/" + t + "/action",
+		Payload: msg.Dump(),
+	})
 	if err != nil {
 		fmt.Printf("Error forwarding message: %s", err)
 		http.Error(w, "BadGateway", http.StatusBadGateway)
