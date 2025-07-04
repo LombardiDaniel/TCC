@@ -107,7 +107,7 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 
 	ackChan := make(chan bool, 10)
 	ackChansMu.Lock()
-	fmt.Printf("created chan %s\n", msg.DeviceMac)
+	// fmt.Printf("created chan %s\n", msg.DeviceMac)
 	ackChans[msg.DeviceMac] = ackChan
 	ackChansMu.Unlock()
 
