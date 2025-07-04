@@ -121,15 +121,19 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 	select {
 	case ack := <-ackChan:
 		if ack {
+			slog.Info(fmt.Sprintf("ACK: %s", msg.DeviceMac))
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("ACK received\n"))
 			return
 		}
 
+		slog.Info(fmt.Sprintf("NACK: %s", msg.DeviceMac))
 		http.Error(w, "NACK received", http.StatusBadGateway)
 		return
 
 	case <-time.After(60 * time.Second):
+		slog.Error(fmt.Sprintf("Timedout waiding for ack: %s", msg.DeviceMac))
 		http.Error(w, "Timeout waiting for ACK", http.StatusGatewayTimeout)
+		return
 	}
 }

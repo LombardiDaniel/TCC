@@ -21,6 +21,7 @@ services:
       REDIS_HOST: redis
       MQTT_HOST: mqtt
       CUSTOM_BACKBONE: false
+      EXPERIMENT_NAME: baseline_1k
     env_file:
       - .env
     depends_on:
@@ -31,7 +32,7 @@ services:
       mqtt:
         condition: service_started
     deploy:
-      replicas: 5
+      replicas: 50
     restart: always
 
   # router_fwd:
@@ -87,7 +88,7 @@ services:
       - 8080
     command: ./baseline
     deploy:
-      replicas: 1
+      replicas: 2
     restart: always
 
   esl_emulator:

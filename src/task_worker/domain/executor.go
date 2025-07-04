@@ -4,19 +4,16 @@ import (
 	"context"
 	"errors"
 	"log"
-	"strings"
+	"os"
 	"time"
 
-	"github.com/lombardidaniel/tcc/worker/common"
 	"github.com/lombardidaniel/tcc/worker/iot"
 	"github.com/lombardidaniel/tcc/worker/models"
 	"github.com/lombardidaniel/tcc/worker/services"
 )
 
 var (
-	isCustomBackbone bool   = strings.ToLower(common.GetEnvVarDefault("CUSTOM_BACKBONE", "true")) == "true"
-	metricFlagStr    string = "custom_backbone"
-	counter          services.Counter
+	experimentName string = os.Getenv("EXPERIMENT_NAME")
 )
 
 type Executor interface {
@@ -33,12 +30,6 @@ type executorImpl struct {
 }
 
 func NewExecutor(backbone iot.Backbone, dbService services.DBService, messagingService services.MessagingService, telemetryService services.TelemetryService) Executor {
-	if !isCustomBackbone {
-		metricFlagStr = "http_backbone"
-	}
-
-	counter, _ = telemetryService.GetCounter(context.Background(), "successfull_"+metricFlagStr, map[string]string{})
-
 	return &executorImpl{
 		backbone:         backbone,
 		dbService:        dbService,
@@ -67,15 +58,18 @@ func (e *executorImpl) Execute(task models.Task) error {
 	}
 
 	initTs := time.Now()
-	// Wait for replies
-	reps, err := e.backbone.Forward(msgs)
+	reps, err := e.backbone.Forward(msgs) // waits for replies
+	delta := time.Since(initTs)
+	e.telemetryService.RecordMetric(
+		context.Background(),
+		"backbone-execution-deltatime",
+		float64(delta.Milliseconds()),
+		map[string]string{"unit": "ms", "experiment": experimentName},
+	)
+
 	if err != nil {
 		return err
 	}
-	delta := time.Since(initTs)
-
-	e.telemetryService.RecordMetric(context.Background(), "deltaTime_"+metricFlagStr, float64(delta.Milliseconds()), map[string]string{"unit": "ms"})
-	counter.Increment(uint64(len(reps)))
 
 	for _, rep := range reps {
 		log.Printf("Received ACK from: %s\n", rep.DeviceMac)

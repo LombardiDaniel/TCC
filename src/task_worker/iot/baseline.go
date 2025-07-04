@@ -46,18 +46,17 @@ func (b *BackboneRestImpl) Forward(msgs []models.RoutingMessage) ([]models.Routi
 	var repsMu sync.Mutex
 
 	var wg sync.WaitGroup
-	errChan := make(chan error)
+	errChan := make(chan error, len(msgs))
 	for _, v := range msgs {
 		wg.Add(1)
 		go func(v models.RoutingMessage) {
 			defer wg.Done()
-			r := models.RoutingReply{DeviceMac: v.DeviceMac, Ack: false}
+			r := models.RoutingReply{DeviceMac: v.DeviceMac, Ack: true}
 			err := b.send(v)
 			if err != nil {
 				errChan <- err
+				r.Ack = false
 			}
-
-			r.Ack = true
 
 			repsMu.Lock()
 			reps = append(reps, r)
