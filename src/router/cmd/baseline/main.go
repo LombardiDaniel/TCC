@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lombardidaniel/tcc/router/pkg/models"
 	"github.com/lombardidaniel/tcc/router/pkg/services"
+	"github.com/redis/go-redis/v9"
 )
 
 var (
@@ -81,7 +82,18 @@ func init() {
 		panic(err)
 	}
 
-	dbService = &services.DBServiceMock{}
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "redis:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	s := redisClient.Ping(context.Background())
+	if err := s.Err(); err != nil {
+		panic(err)
+	}
+
+	dbService = services.NewDBService(redisClient)
 }
 
 func main() {

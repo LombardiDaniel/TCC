@@ -89,7 +89,7 @@ func init() {
 
 	messagingService = services.NewMessagingService(ch, &mqttClient)
 	sharedMemService = services.NewSharedMemoryService(redisClient)
-	dbService = &services.DBServiceMock{}
+	dbService = services.NewDBService(redisClient)
 }
 
 func main() {

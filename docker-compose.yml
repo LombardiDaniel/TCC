@@ -20,8 +20,9 @@ services:
       RABBITMQ_HOST: rbmq
       REDIS_HOST: redis
       MQTT_HOST: mqtt
-      CUSTOM_BACKBONE: false
-      EXPERIMENT_NAME: baseline_1k
+      CUSTOM_BACKBONE: true
+      EXPERIMENT_NAME: custom_1k
+      ROUTER_REPLICAS: 1
     env_file:
       - .env
     depends_on:
@@ -35,61 +36,61 @@ services:
       replicas: 50
     restart: always
 
-  # router_fwd:
-  #   build:
-  #     context: src/router
-  #     dockerfile: Dockerfile
-  #   environment:
-  #     RABBITMQ_HOST: rbmq
-  #     REDIS_HOST: redis
-  #     MQTT_HOST: mqtt
-  #   depends_on:
-  #     rbmq:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #     mqtt:
-  #       condition: service_started
-  #   command: ./fwd
-  #   deploy:
-  #     replicas: 2
-  #   restart: always
-
-  # router_bck:
-  #   build:
-  #     context: src/router
-  #     dockerfile: Dockerfile
-  #   environment:
-  #     RABBITMQ_HOST: rbmq
-  #     REDIS_HOST: redis
-  #     MQTT_HOST: mqtt
-  #   depends_on:
-  #     rbmq:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #     mqtt:
-  #       condition: service_started
-  #   command: ./bck
-  #   deploy:
-  #     replicas: 2
-  #   restart: always
-
-  router_baseline:
+  router_fwd:
     build:
       context: src/router
       dockerfile: Dockerfile
     environment:
+      RABBITMQ_HOST: rbmq
+      REDIS_HOST: redis
       MQTT_HOST: mqtt
     depends_on:
+      rbmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
       mqtt:
         condition: service_started
-    expose:
-      - 8080
-    command: ./baseline
+    command: ./fwd
     deploy:
-      replicas: 2
+      replicas: 1
     restart: always
+
+  router_bck:
+    build:
+      context: src/router
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_HOST: rbmq
+      REDIS_HOST: redis
+      MQTT_HOST: mqtt
+    depends_on:
+      rbmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    command: ./bck
+    deploy:
+      replicas: 1
+    restart: always
+
+  # router_baseline:
+  #   build:
+  #     context: src/router
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     MQTT_HOST: mqtt
+  #   depends_on:
+  #     mqtt:
+  #       condition: service_started
+  #   expose:
+  #     - 8080
+  #   command: ./baseline
+  #   deploy:
+  #     replicas: 1
+  #   restart: always
 
   esl_emulator:
     build:
