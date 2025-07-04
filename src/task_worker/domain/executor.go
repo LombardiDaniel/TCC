@@ -14,7 +14,8 @@ import (
 
 var (
 	experimentName string = os.Getenv("EXPERIMENT_NAME")
-	ruterReplicas         = os.Getenv("ROUTER_REPLICAS")
+	routerReplicas        = os.Getenv("ROUTER_REPLICAS")
+	workerReplicas        = os.Getenv("WORKER_REPLICAS")
 )
 
 type Executor interface {
@@ -65,7 +66,12 @@ func (e *executorImpl) Execute(task models.Task) error {
 		context.Background(),
 		"backbone-execution-deltatime",
 		float64(delta.Milliseconds()),
-		map[string]string{"unit": "ms", "experiment": experimentName, "router_replicas": ruterReplicas},
+		map[string]string{
+			"unit":            "ms",
+			"experiment":      experimentName,
+			"router_replicas": routerReplicas,
+			"worker_replicas": workerReplicas,
+		},
 	)
 
 	if err != nil {

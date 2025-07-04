@@ -148,7 +148,7 @@ func main() {
 
 		err = executor.Execute(task) // business logic
 		if err != nil {
-			log.Printf("Could not execute transaction: %s", task.TransactionId)
+			log.Printf("Could not execute transaction: %s: %s", task.TransactionId, err.Error())
 			err := d.Acknowledger.Nack(d.DeliveryTag, false, false)
 			if err != nil {
 				panic(err)

@@ -43,10 +43,13 @@ func onMsgCallback(topic string, payload []byte) error {
 	}
 
 	gwMac := topic[4:16]
+	t := "/gw/" + gwMac + "/response"
+
+	log.Printf("acking %s to %s\n", routingMsg.DeviceMac, t)
 
 	_, err = mqttManager.Publish(ctx, &paho.Publish{
 		QoS:     1,
-		Topic:   "/gw/" + gwMac + "/response",
+		Topic:   t,
 		Payload: rep.Dump(),
 	})
 	if err != nil {
@@ -60,7 +63,7 @@ func onMsgCallback(topic string, payload []byte) error {
 func init() {
 	ctx = context.Background()
 	broker, _ := url.Parse("tcp://mqtt:1883")
-	clientID := "esl" + uuid.NewString()
+	clientID := "esl_emulator" + uuid.NewString()
 
 	actionTopic := "/gw/+/action"
 	cfg := mqtt.ClientConfig{

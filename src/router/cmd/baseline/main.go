@@ -34,7 +34,7 @@ func init() {
 	ackChans = make(map[string]chan bool)
 
 	broker, _ := url.Parse("tcp://mqtt:1883")
-	clientID := "bck" + uuid.NewString()
+	clientID := "baseline_router" + uuid.NewString()
 
 	responseTopic := "/gw/+/response"
 	cfg := mqtt.ClientConfig{
@@ -62,6 +62,8 @@ func init() {
 						slog.Error("could not parse message")
 						return false, nil
 					}
+
+					slog.Info(fmt.Sprintf("rcvd ACK: %s", rep.DeviceMac))
 
 					ackChansMu.Lock()
 					ackChan, exists := ackChans[rep.DeviceMac]
@@ -133,7 +135,7 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 	select {
 	case ack := <-ackChan:
 		if ack {
-			slog.Info(fmt.Sprintf("ACK: %s", msg.DeviceMac))
+			slog.Info(fmt.Sprintf("returning ACK: %s", msg.DeviceMac))
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("ACK received\n"))
 			return
