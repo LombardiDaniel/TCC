@@ -45,7 +45,7 @@ func init() {
 			fmt.Println("Connected to MQTT broker")
 			cm.Subscribe(context.Background(), &paho.Subscribe{
 				Subscriptions: []paho.SubscribeOptions{{
-					Topic: "$share/router-bck-group/" + responseTopic,
+					Topic: "$share/router-baseline-group/" + responseTopic,
 					QoS:   byte(1),
 				}},
 			})
