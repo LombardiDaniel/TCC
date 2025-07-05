@@ -408,7 +408,7 @@ Here we see a great increase in the mean execution time, meaning our system is s
 
 Now we see much better metrics, with both the mean and p99 brought down significantly, the mean from 2000ms down to around 120ms.
 
-As a simple "for fun" experiment, we'll also run one with 100 router replicas
+As a simple "for fun" experiment, we'll also run one with 200 router replicas.
 
 When measusring the custom backbone with 20 router replicas, we reach a system with a minimal increase in latency and show a true increase in scalability and a proven elasticity of the system.
 
