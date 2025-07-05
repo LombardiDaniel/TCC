@@ -13,8 +13,6 @@ import (
 )
 
 var (
-	count int64 = *flag.Int64("count", 1000, "ammount of messages to be sent to rbmq")
-
 	taskQueue amqp.Queue
 	ch        *amqp.Channel
 )
@@ -44,9 +42,13 @@ func init() {
 }
 
 func main() {
+	var count *int64 = flag.Int64("count", 1000, "ammount of messages to be sent to rbmq")
+	flag.Parse()
+	fmt.Printf("Will insert %d messages\n", *count)
+
 	initTs := time.Now()
 	sent := 0
-	for i := range count {
+	for i := range *count {
 		m := models.Task{
 			Action:        "tagUpdate",
 			TransactionId: fmt.Sprint(i),
