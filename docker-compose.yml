@@ -22,7 +22,7 @@ services:
       MQTT_HOST: mqtt
       CUSTOM_BACKBONE: true
       EXPERIMENT_NAME: custom_10k
-      ROUTER_REPLICAS: 20
+      ROUTER_REPLICAS: 200
       WORKER_REPLICAS: 50
     env_file:
       - .env

@@ -6,7 +6,7 @@ import pandas as pd
 import pymongo
 
 EXPERIMENT_NAME = "custom_10k"
-ROUTER_REPLICAS = "20"
+ROUTER_REPLICAS = "200"
 
 # Connect to MongoDB
 client = pymongo.MongoClient(os.getenv("MONGO_URI"))

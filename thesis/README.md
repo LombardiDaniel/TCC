@@ -408,12 +408,14 @@ Here we see a great increase in the mean execution time, meaning our system is s
 
 Now we see much better metrics, with both the mean and p99 brought down significantly, the mean from 2000ms down to around 120ms.
 
-As a simple "for fun" experiment, we'll also run one with 200 router replicas.
-
 When measusring the custom backbone with 20 router replicas, we reach a system with a minimal increase in latency and show a true increase in scalability and a proven elasticity of the system.
 
----
+As a simple "for fun" experiment, we'll also run one with 200 router replicas, to compare how the optimum, "maximum" scaled case for the routers would be. For this, we reserved a machine 64vCPU, 256GB RAM on MagaluCloud.
 
-The increased average delay is probably due to operations being done in the complete system, instead of a simples L7 HTTP call, we make several commands to RabbitMQ, a queue needs to be created, even though a simple in-memory one, it still adds latency to the system. With this being considered, a negligible ammount, especially when considering the high-availability and elasticity of the system.
+![histogram_custom_10k_200_router_replicas](/thesis/static/experiments/histogram_custom_10k_200_router_replicas.png)
 
-The system can now support much more concurrent requests, allowing scale-up to thousands of workers.
+Here we can see a great decrease in latency, down to around 6ms and a p99 of 57ms. This means that increasing the number of router replicas does lead to a greater scalability. This is because the messages will be waiting on the queue in RabbitMQ for less time before being collected by the routers and forwarded to MQTT.
+
+However, the ideal configuration parameters for scalability using a platform such as KEDA for Kubernetes will not be developed in this study.
+
+## RESULTS

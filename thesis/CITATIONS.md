@@ -36,6 +36,8 @@ MSR-TR-95-56, December 1995.
 
 [website] DOCKER. What is Docker. Available at: https://docs.docker.com/get-started/docker-overview/. Accessed on: 18 jun. 2025.
 
+[website] KEDA. Available at: https://keda.sh/
+
 [website] GO. Use Cases. Available at: https://go.dev/solutions/use-cases. Accessed on 18 jun. 2025.
 
 [e-book] MARTINEKUAN. Queue-Based Load Leveling pattern - Azure Architecture Center. Available at: <https://learn.microsoft.com/en-us/azure/architecture/patterns/queue-based-load-leveling>.
