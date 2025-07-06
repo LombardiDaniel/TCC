@@ -97,13 +97,13 @@ The Advanced Message Queuing Protocol (AMQP) is an open standard application-lay
 
 Message Queuing Telemetry Transport (MQTT) is a lightweight, publish-subscribe messaging protocol designed for constrained devices and unreliable networks, making it ideal for the Internet of Things (IoT). Instead of devices communicating directly, they connect to a central MQTT broker. Devices that want to send data become publishers, sending messages to specific "topics" on the broker. Devices that want to receive data become subscribers, indicating interest in certain topics. The broker then efficiently delivers messages from publishers to all interested subscribers, decoupling senders from receivers and allowing for highly scalable and asynchronous communication. For load balancing, MQTT offers the round-robin algorithm for delivering messages inside listeners of a specific topic.
 
-![queue](/thesis/static/queue.png)
+![queue](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/queue.png)
 
 ### Remote Procedure Call (RPC)
 
 A Remote Procedure Call (RPC) is a proposal to allow programs to call procedures located on other machines, with the message passing part of it not being visible to the programmer. The main idea is that a process that may be complex is called externally from the main machine, allowing the programmer to not care about the address spaces, pameters and results marshalling. In the context of IoT, a common use case for an RPC is for when an actuator is called to execute a task. The client (programmers code) calls the server (IoT system) to toggle a light switch, and then replying if the task was successful or not.
 
-![rpc](/thesis/static/rpc.png)
+![rpc](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/rpc.png)
 
 ### In-Memory Data Stores / Databases
 
@@ -176,7 +176,7 @@ By combining these quantitative and qualitative measures, we aim to provide a ho
 
 The Communication Backbone developed for this thesis consists of several components:
 
-![simplified architecture](/thesis/static/simplified_arch.png)
+![simplified architecture](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/simplified_arch.png)
 
 #### Task Queue
 
@@ -206,11 +206,11 @@ Any bottleneck or inefficiency within this intricate layer can propagate through
 
 By default, the exemplified architecture will make a simple RPC via an HTTP method, this will be our baseline system. The router entity exists to enable the task_worker to be completely device vendor/technology agnostic. It (in our system) communicates with the gateways via MQTT, but this separation allows us to quickly modify it in the future.
 
-![rpc via http](/thesis/static/rpc_via_http.png)
+![rpc via http](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/rpc_via_http.png)
 
 With the following sequence diagram:
 
-![rpc via http - sequence diagram](/thesis/static/seq_diagram_http_rpc.png)
+![rpc via http - sequence diagram](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/seq_diagram_http_rpc.png)
 
 Note that sinse so that the router can communicate with MQTT, it needs the GW_MAC. This means we would need a single router per gateway (with a ratio of around 1 gateway to every 5 thousand ESLs). This poses as the first limitation of scalability.
 
@@ -222,11 +222,11 @@ A first-look alternative to this would be to simply listen on all gateway macs f
 
 Firstly, since MQTT load-balancing is offered in a Round-Robin manner, all listeners to a topic share the messages one-by-one.
 
-![round-robin](/thesis/static/round-robin.png)
+![round-robin](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/round-robin.png)
 
 The problem arises from the fact that there is no guarantee that the same router_node that made the action request will be the same one that recieves reponse message.
 
-![round-robin-issue - sequence diagram](/thesis/static/seq_diagram_http_rpc_issue.png)
+![round-robin-issue - sequence diagram](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/seq_diagram_http_rpc_issue.png)
 
 Walking though this sequence diagram we see:
 
@@ -257,11 +257,11 @@ This creates a highly efficient and self-managing system for decoupling the task
 
 Now the task worker interacts with the RPC mechanism as:
 
-![rpc via queue](/thesis/static/rpc_via_queue.png)
+![rpc via queue](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/rpc_via_queue.png)
 
 Changing the overall architecture to:
 
-![full architecture](/thesis/static/full_arch.png)
+![full architecture](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/full_arch.png)
 
 By decoupling the task workers from the routers, we now can reate a forward (fwd) router and a back (bck) router services to communicate with MQTT, simplifying the code and software architecture.
 
@@ -269,9 +269,9 @@ By decoupling the task workers from the routers, we now can reate a forward (fwd
 
 With this, we have the following two sequence diagrams, the former from the task worker utilizing the FWD Router, and the latter from the perspective of the BCK Router utilization.
 
-![FWD Router sequence diagram](/thesis/static/seq_diagram_fwd_router.png)
+![FWD Router sequence diagram](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/seq_diagram_fwd_router.png)
 
-![BCK Router sequence diagram](/thesis/static/seq_diagram_bck_router.png)
+![BCK Router sequence diagram](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/seq_diagram_bck_router.png)
 
 With this, all messages are always routed back to the requesting node, independently of the number of replicas of the routers, using the Correlation ID stored in Redis as service discovery to correctly route the response to the task_worker, making for a scalable and reliable system.
 
@@ -390,7 +390,7 @@ For the performance tests, the task count was increased to 10,000 to significant
 
 Starting with the baseline system, we measure the execution times to assess request timeouts. Noting that all tests ran with 50 concurrent workers making requests (a small number, in our practial ESL case, it was expected to have aroun 700 workers concurrently at average working conditions, with peaks of up to 5 thousand workers).
 
-![histogram_baseline_1k_1_router_replicas](/thesis/static/experiments/histogram_baseline_1k_1_router_replicas.png)
+![histogram_baseline_1k_1_router_replicas](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/experiments/histogram_baseline_1k_1_router_replicas.png)
 
 > Histogram of the Baseline Backbone with 1 router replica for 1k tasks
 
@@ -398,7 +398,7 @@ The histogram for the baseline system with 1,000 tasks and 1 router replica show
 
 Following with the Custom Backbone, the execution times:
 
-![histogram_custom_1k_1_router_replicas](/thesis/static/experiments/histogram_custom_1k_1_router_replicas.png)
+![histogram_custom_1k_1_router_replicas](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/experiments/histogram_custom_1k_1_router_replicas.png)
 
 > Histogram of the Custom Backbone with 1 router replica for 1k tasks
 
@@ -410,25 +410,25 @@ These initial functional tests established the base functionality of both the cu
 
 To start the performance tests, we increase the router instances replicas to 2. This "starts" the scalability aspect of the systems.
 
-![histogram_baseline_1k_2_router_replicas](/thesis/static/experiments/histogram_baseline_1k_2_router_replicas.png)
+![histogram_baseline_1k_2_router_replicas](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/experiments/histogram_baseline_1k_2_router_replicas.png)
 
 > Histogram of the Basline Backbone with 2 router replicas for 1k tasks
 
 The first performance test with the baseline backbone, using 1,000 requests and 2 router replicas, revealed a significant pitfall: the misrouting issue. A large number of requests escaped the 60-second timeout window, indicating that they timed out and were unable to correctly reply to the worker. The few successful requests were likely randomly routed to the same node that made the request. With only 2 replicas, the ratio of misrouted to correctly routed messages already greatly surpassed the acceptable limit of eventual failures, a ratio expected to increase with more router replicas. Consequently, further tests with increased task counts and router replicas were not conducted on the baseline router case.
 
-![histogram_custom_1k_2_router_replicas](/thesis/static/experiments/histogram_custom_1k_2_router_replicas.png)
+![histogram_custom_1k_2_router_replicas](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/experiments/histogram_custom_1k_2_router_replicas.png)
 
 > Histogram of the Custom Backbone with 2 router replicas for 1k tasks
 
 With the custom backbone, using the same parameters (1,000 requests, 2 router replicas), the system continued with correct message routing, evidenced by no requests timing out. Importantly, a small increase in the median latency was observed compared to a single router replica.
 
-![histogram_custom_10k_2_router_replicas](/thesis/static/experiments/histogram_custom_10k_2_router_replicas.png)
+![histogram_custom_10k_2_router_replicas](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/experiments/histogram_custom_10k_2_router_replicas.png)
 
 > Histogram of the Custom Backbone with 2 router replicas for 10k tasks
 
 A heavier experiment with 10,000 requests and 2 replicas using the custom backbone showed a great increase in the mean execution time, indicating that the system was beginning to bottleneck. To address this, the number of router replicas was increased to 20 to allow for better load balancing and to compare the results.
 
-![histogram_custom_10k_20_router_replicas](/thesis/static/experiments/histogram_custom_10k_20_router_replicas.png)
+![histogram_custom_10k_20_router_replicas](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/experiments/histogram_custom_10k_20_router_replicas.png)
 
 > Histogram of the Custom Backbone with 20 router replicas for 10k tasks
 
@@ -436,7 +436,7 @@ Increasing the router replicas to 20 for 10,000 requests resulted in much better
 
 Finally, a "for fun" experiment was conducted with 200 router replicas, reserving a machine with 64vCPU and 256GB RAM on MagaluCloud. This experiment showed a great decrease in latency, down to around 6ms with a p99 of 57ms. This result indicates that increasing the number of router replicas indeed leads to greater scalability, as messages spend less time waiting in the RabbitMQ queue before being collected by the routers and forwarded to MQTT.
 
-![histogram_custom_10k_200_router_replicas](/thesis/static/experiments/histogram_custom_10k_200_router_replicas.png)
+![histogram_custom_10k_200_router_replicas](/Users/daniellombardi/Desktop/UFSCar/artigo/TCC/TCC/thesis/static/experiments/histogram_custom_10k_200_router_replicas.png)
 
 > Histogram of the Custom Backbone with 200 router replicas for 10k tasks
 
@@ -455,6 +455,8 @@ Building upon the robust foundation established by this MVP, a significant futur
 Another compelling area for future work involves enhancing the system's technology agnosticism. While currently leveraging a well-defined set of modern technologies, future iterations could explore abstracting away specific dependencies where feasible. This could involve developing standardized interfaces or adapting to widely adopted protocols that are not tightly coupled to a single vendor or technology stack for components like message queuing or data storage. The goal would be to maximize interoperability and provide greater flexibility for integration into diverse existing infrastructures, allowing organizations to adopt the backbone without significant refactoring of their current technology investments, thereby broadening its applicability and appeal across various enterprise environments.
 
 ## REFERENCES
+
+[github repository] https://github.com/LombardiDaniel/TCC
 
 [article] Motta, R. C., Silva, V., & Travassos, G. H. (2019). Towards a more in-depth understanding of the IoT Paradigm and its challenges. Journal of Software Engineering Research and Development, 7, 3:1 – 3:16. https://doi.org/10.5753/jserd.2019.14
 
