@@ -53,7 +53,7 @@ On top of this, it is expected that this project can be used as a base and refer
 
 This chapter will define the core concepts necessary to understand our solution, including the nuances of IoT ecosystems, the principles of cloud scalability, and the challenges of implementing Remote Procedure Calls (RPCs) over the MQTT protocol in horizontally scaled environments. It will further elaborate on how distributed queues and in-memory data stores are critical for overcoming these challenges, enabling seamless and reliable operations for large-scale IoT applications. This foundational knowledge is essential for appreciating the architectural design presented in this thesis. We will also do a quick analysis of used tools and technologies.
 
-### The Internet of Thins (IoT) Ecosystem
+### The Internet of Things (IoT) Ecosystem
 
 As defined by Atzori et al., Internet of Things can be defined as three main paradigms, internet-oriented (middleware), things oriented (sensors) and semantic-oriented (knowledge). It is a network of physical objects embedded with technologies such as sensors, actuators and software that allows it to connect to external systems.
 
@@ -301,6 +301,8 @@ func main() {
 }
 ```
 
+> Pseudo-code for the task_router
+
 The pseudocode for the fwd router:
 
 ```go
@@ -316,6 +318,8 @@ func main() {
     }
 }
 ```
+
+> Pseudo-code for the fwd_router
 
 The pseudocode for the bck router:
 
@@ -334,11 +338,15 @@ func main() {
 }
 ```
 
+> Pseudo-code for the bck_router
+
 ## HOMOLOGATION
 
-After the MVP development, tests where developed to guarantee the working and efficiency of the system. Firstly, we need to set the baseline system performance numbers. All tests were ran on a 12-core machine with 16GB of ram, with limiting of resources only in the router elements in the architecture, all other systems (i.e. queues, dbs etc) had no resource limits. The CPU of the router elements was capped at 100 mCPU per replica. All tests were being executed by 50 workers simultaniously to increase the load on the routers, bringing it to a more realistic value. The request timeout was considered 60 seconds, so if a reply was not recieved within this timeout, the reply window was closed and the request deemed unsuccessful.
+After the MVP development, tests were developed to guarantee the working and efficiency of the system. Firstly, the baseline system performance numbers were established. All tests were run on a 12-core machine with 16GB of RAM. Resource limits were only applied to the router elements in the architecture, while all other systems (i.e., queues, databases, etc.) had no resource limits. The CPU of the router elements was capped at 100 mCPU per replica. All tests were executed by 50 workers simultaneously to increase the load on the routers, bringing it to a more realistic value. The request timeout was set to 60 seconds; if a reply was not received within this timeout, the reply window was closed, and the request was deemed unsuccessful.
 
-The values of the tests were measured using a telemetry service that saves the latency of the RPCs to mongodb asynchrosnesly in a different coroutine, as to reduce the impact of the measurements.
+The values of the tests were measured using a telemetry service that asynchronously saves the latency of the RPCs to MongoDB in a different coroutine to reduce the impact of the measurements. The MongoDB instance was running on a separate server to avoid interfering with the experiments.
+
+To capture the complete system latency and execution time, the only data collected was on the worker-side as shown in the provided pseudo-code:
 
 ```go
 // task_worker with telemetry
@@ -358,64 +366,82 @@ func main() {
             return errors.New("not all devices replied")
         }
         delta := time.Since(t0)
+        asyncTelemetryService.AddDelta(delta)
+        // ...
     }
 }
 ```
 
+> Telemetry implemented on task_worker pseudo-code
+
+This telemetry implementation on the task_worker captured the time taken for the commsBackbone. Forward method, which waits for replies from the system.
+
 ### Functional Tests
 
-To guarantee and homologate the workings of our system, we start from the baseline; firstly it should be able to simply follow the sequence diagram of the architecture. As the purpose of the first test is simply to test the if the system functions, we executed the test for 1k (one thousand) tasks. It was executed with only 1 router replica. After running the experiment, we plotted the histogram of the latency of each request.
-
-![histogram_baseline_1k_1_router_replicas](/thesis/static/experiments/histogram_baseline_1k_1_router_replicas.png)
-
-We can see large grouping around the 50ms mark, that originated from the bulk of the requests with concurrent code being executed, and also a small peak of less than 10ms that may have originated from the first and last few requests, where code was not concurrent.
-
-With the results from the tests being mostly under 1 second, far below the 60 seconds timeout, we can guarantee that all requests reached the ESL emulator and got replied successfully, independant of ACK or NACK status.
-
-Moving on to our developed Custom Communcation Backbone, with exatcly the same layout as before, we reach have:
-
-![histogram_custom_1k_1_router_replicas](/thesis/static/experiments/histogram_custom_1k_1_router_replicas.png)
-
-As we can see, the router also worked exactly as expected, with a small increase in mean delay, as well as a increase in p99 delay, but still concluded with a maximum of around 250ms, well below the timeout of 60 seconds. As such, we successfully validade our proposed custom architecture for a single replica.
-
-This establish the base functionality of our systems, both the custom backbone and our baseline backbone are working as expected under base circustances, 50 task workers executing in parallel with a single router replica routing the requests to the device gateways.
+To guarantee and homologate the workings of the system, the initial functional tests aimed to verify if the system simply followed the sequence diagram of the architecture. For this purpose, 1,000 tasks were executed with only 1 router replica. After running the experiment, a histogram of the latency of each request was plotted to visualize the distribution of response times.
 
 ### Performance Tests
 
-For the performance tests of the systems, we'll increase the tasks count to 10k (ten thousand) to increase the bulk of concurrent operations, making sure the routes requests overlap much more than in the functional test, stressing the router node. We will also increase the number of routers replicas in each experiment to test horizontal scalability.
+For the performance tests, the task count was increased to 10,000 to significantly increase the bulk of concurrent operations, ensuring that router requests overlapped much more than in the functional tests, thereby stressing the router node. Additionally, the number of router replicas was increased in each experiment to evaluate horizontal scalability.
 
-Our first performance test will run with 2 replicas for 1k requests in the baseline backbone.
+## RESULTS
+
+### Functional Tests
+
+Starting with the baseline system, we measure the execution times to assess request timeouts. Noting that all tests ran with 50 concurrent workers making requests (a small number, in our practial ESL case, it was expected to have aroun 700 workers concurrently at average working conditions, with peaks of up to 5 thousand workers).
+
+![histogram_baseline_1k_1_router_replicas](/thesis/static/experiments/histogram_baseline_1k_1_router_replicas.png)
+
+> Histogram of the Baseline Backbone with 1 router replica for 1k tasks
+
+The histogram for the baseline system with 1,000 tasks and 1 router replica showed a large grouping around the 50ms mark, originating from the bulk of concurrent code execution. A smaller peak of less than 10ms was observed, possibly from the first and last few requests where code was mostly not concurrent. With most results under 1 second, well below the 60-second timeout, it was confirmed that all requests reached the ESL emulator and received successful replies, regardless of ACK or NACK status.
+
+Following with the Custom Backbone, the execution times:
+
+![histogram_custom_1k_1_router_replicas](/thesis/static/experiments/histogram_custom_1k_1_router_replicas.png)
+
+> Histogram of the Custom Backbone with 1 router replica for 1k tasks
+
+For the developed Custom Communication Backbone, with the same setup, the histogram also showed the router working as expected. There was a small increase in mean delay and an increase in p99 delay, but the maximum delay remained around 250ms, significantly below the 60-second timeout. This validated the proposed custom architecture for a single replica.
+
+These initial functional tests established the base functionality of both the custom backbone and the baseline backbone, confirming their expected operation under basic circumstances (50 task workers executing in parallel with a single router replica routing requests to device gateways).
+
+### Performance Tests
+
+To start the performance tests, we increase the router instances replicas to 2. This "starts" the scalability aspect of the systems.
 
 ![histogram_baseline_1k_2_router_replicas](/thesis/static/experiments/histogram_baseline_1k_2_router_replicas.png)
 
-Here we already trip into the main pitfall, the misrouting issue with the baseline system is clearly seen by the large ammount of requests escaping the 60 seconds timeout window. This means that all requests in the righ-most part of the graph have timedout, being unable to correctly reply to the worker. The few left-most values have randomly succeeded from being routed to the same node that made the request. Note that with only 2 replicas the ratio of misrouted messages to correctly routed ones already greatly surpases the acceptable limit of eventual failures, a ratio that will only increase with the number of replicas of the router.
+> Histogram of the Basline Backbone with 2 router replicas for 1k tasks
 
-As such, tests with increased task counts and router replicas will NOT be done on the baseline router case.
-
-With our custom backbone, using the same parameters for test.
+The first performance test with the baseline backbone, using 1,000 requests and 2 router replicas, revealed a significant pitfall: the misrouting issue. A large number of requests escaped the 60-second timeout window, indicating that they timed out and were unable to correctly reply to the worker. The few successful requests were likely randomly routed to the same node that made the request. With only 2 replicas, the ratio of misrouted to correctly routed messages already greatly surpassed the acceptable limit of eventual failures, a ratio expected to increase with more router replicas. Consequently, further tests with increased task counts and router replicas were not conducted on the baseline router case.
 
 ![histogram_custom_1k_2_router_replicas](/thesis/static/experiments/histogram_custom_1k_2_router_replicas.png)
 
-Here we continue with the correct routing of messages, wich is clearly showed by still no requests having timed out. Most importantly, we see a small increase in the median when compared to a single router replica.
+> Histogram of the Custom Backbone with 2 router replicas for 1k tasks
 
-We can then run a heavier experiment, with 10 thousand requests and keeping the same 2 replicas:
+With the custom backbone, using the same parameters (1,000 requests, 2 router replicas), the system continued with correct message routing, evidenced by no requests timing out. Importantly, a small increase in the median latency was observed compared to a single router replica.
 
 ![histogram_custom_10k_2_router_replicas](/thesis/static/experiments/histogram_custom_10k_2_router_replicas.png)
 
-Here we see a great increase in the mean execution time, meaning our system is starting to bottleneck. As such, we also increase the ammount of router replicas to 10 and later 20, to allow better load bancing of the routing and compare the results.
+> Histogram of the Custom Backbone with 2 router replicas for 10k tasks
+
+A heavier experiment with 10,000 requests and 2 replicas using the custom backbone showed a great increase in the mean execution time, indicating that the system was beginning to bottleneck. To address this, the number of router replicas was increased to 20 to allow for better load balancing and to compare the results.
 
 ![histogram_custom_10k_20_router_replicas](/thesis/static/experiments/histogram_custom_10k_20_router_replicas.png)
 
-Now we see much better metrics, with both the mean and p99 brought down significantly, the mean from 2000ms down to around 120ms.
+> Histogram of the Custom Backbone with 20 router replicas for 10k tasks
 
-When measusring the custom backbone with 20 router replicas, we reach a system with a minimal increase in latency and show a true increase in scalability and a proven elasticity of the system.
+Increasing the router replicas to 20 for 10,000 requests resulted in much better results, with both the mean and p99 significantly reduced (mean from 2000ms down to approximately 120ms, and p99 from 3000ms to 400ms). This demonstrated that when measuring the custom backbone with 20 router replicas, the system achieved a minimal increase in latency, showing a true increase in scalability and proven elasticity.
 
-As a simple "for fun" experiment, we'll also run one with 200 router replicas, to compare how the optimum, "maximum" scaled case for the routers would be. For this, we reserved a machine 64vCPU, 256GB RAM on MagaluCloud.
+Finally, a "for fun" experiment was conducted with 200 router replicas, reserving a machine with 64vCPU and 256GB RAM on MagaluCloud. This experiment showed a great decrease in latency, down to around 6ms with a p99 of 57ms. This result indicates that increasing the number of router replicas indeed leads to greater scalability, as messages spend less time waiting in the RabbitMQ queue before being collected by the routers and forwarded to MQTT.
 
 ![histogram_custom_10k_200_router_replicas](/thesis/static/experiments/histogram_custom_10k_200_router_replicas.png)
 
-Here we can see a great decrease in latency, down to around 6ms and a p99 of 57ms. This means that increasing the number of router replicas does lead to a greater scalability. This is because the messages will be waiting on the queue in RabbitMQ for less time before being collected by the routers and forwarded to MQTT.
+> Histogram of the Custom Backbone with 200 router replicas for 10k tasks
 
-However, the ideal configuration parameters for scalability using a platform such as KEDA for Kubernetes will not be developed in this study.
+It must be noted that the ideal configuration parameters for scalability using a platform such as KEDA for Kubernetes are not be developed in this study.
 
-## RESULTS
+## CONCLUSIONS
+
+### Future Works
