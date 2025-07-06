@@ -456,7 +456,7 @@ Another compelling area for future work involves enhancing the system's technolo
 
 ## REFERENCES
 
-[github repository] https://github.com/LombardiDaniel/TCC
+[code repository] Lombardi, D. (2025). Optimizing IoT Cloud Applications for Scalability: Leveraging RPC with Distributed Queues for Seamless Operations (Version 1.0.0) [Computer software]
 
 [article] Motta, R. C., Silva, V., & Travassos, G. H. (2019). Towards a more in-depth understanding of the IoT Paradigm and its challenges. Journal of Software Engineering Research and Development, 7, 3:1 – 3:16. https://doi.org/10.5753/jserd.2019.14
 

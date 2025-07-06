@@ -1,3 +1,5 @@
+[code repository] Lombardi, D. (2025). Optimizing IoT Cloud Applications for Scalability: Leveraging RPC with Distributed Queues for Seamless Operations (Version 1.0.0) [Computer software]
+
 [article] Motta, R. C., Silva, V., & Travassos, G. H. (2019). Towards a more in-depth understanding of the IoT Paradigm and its challenges. Journal of Software Engineering Research and Development, 7, 3:1 – 3:16. https://doi.org/10.5753/jserd.2019.14
 
 [article] POURMAJID, W. et al. (2017). On Challenges of Cloud Monitoring. Proceedings of the 27th Annual International Conference on Computer Science and Software Engineering
