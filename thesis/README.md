@@ -30,7 +30,7 @@ Drawing from practical experience, our study examines a core problem arising fro
 
 ### General Objective
 
-The main objective of this work is to create a Minimum Viable Product (MVP) of a communication backbone for large-scale IoT device networks, being implemented and tested with the use of Electronic Shelf Lables (ESLs) in a large hardware-store chain in Brazil.
+The main objective of this work is to create a Minimum Viable Product (MVP) of a communication backbone for large-scale IoT device networks, being implemented and tested with the use of Electronic Shelf Labels (ESLs) in a large hardware-store chain in Brazil.
 
 ### Specific Objectives
 
