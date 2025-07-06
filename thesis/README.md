@@ -41,7 +41,7 @@ The main objective of this work is to create a Minimum Viable Product (MVP) of a
 
 ### Expected Results
 
-1. A well-defined and robust architecture that prioritizes horizontal scalability, demonstrating high elasticity to accommodate varying loads thoughout the day.
+1. A well-defined and robust architecture that prioritizes horizontal scalability, demonstrating high elasticity to accommodate varying loads throughout the day.
 
 2. Functional Minimum Viable Product (MVP): A working MVP that embodies the core functionalities of the proposed solution and serves as a tangible demonstration of the architectural design.
 
@@ -51,11 +51,11 @@ On top of this, it is expected that this project can be used as a base and refer
 
 ## THEORETICAL BASIS
 
-This chapter will define the core concepts necessary to understand our solution, including the nuances of IoT ecosystems, the principles of cloud scalability, and the challenges of implementing Remote Procedure Calls (RPCs) over the MQTT protocol in horizontally scaled environments. It will further elaborate on how distributed queues and in-memory data stores are critical for overcoming these challenges, enabling seamless and reliable operations for large-scale IoT applications. This foundational knowledge is essential for appreciating the architectural design presented in this thesis. We will also do a quick analysis of used tools and technologies.
+This chapter will define the core concepts necessary to understand our solution, including the nuances of IoT ecosystems, the principles of cloud scalability, and the challenges of implementing Remote Procedure Calls (RPCs) over the MQTT protocol in horizontally scaled environments. It will further elaborate on how distributed queues and in-memory data stores are critical for overcoming these challenges, enabling seamless and reliable operations for large-scale IoT applications. This foundational knowledge is essential for appreciating the architectural design presented in this thesis. We will also present a quick analysis of used tools and technologies.
 
-### The Internet of Things (IoT) Ecosystem
+### The Internet of Things Ecosystem
 
-As defined by Atzori et al., Internet of Things can be defined as three main paradigms, internet-oriented (middleware), things oriented (sensors) and semantic-oriented (knowledge). It is a network of physical objects embedded with technologies such as sensors, actuators and software that allows it to connect to external systems.
+As defined by Atzori et al., Internet of Things can be defined as three main paradigms: internet-oriented (middleware), things oriented (sensors) and semantic-oriented (knowledge). It is a network of physical objects embedded with technologies such as sensors, actuators and software that allows it to connect to external systems.
 
 Sensors are devices that act as an intake point of data, they measure physical phenomena (i.e. temperature) and convert them to digital data. Actuators are devices that receive commands from an external control system and converts them into physical actions (i.e. switching a light, changing a value etc.), they allow us to close the loop between the digital and physical worlds, commonly requiring bidirectional control to acknowledge the commands. Our work focuses on the latter. Both sensors and actuators commonly operate via a GW (gateway) that act as a middleman from our servers to the devices (this allows us to have use different protocols such as bluetooth while still connecting them via other protocols to the servers, such as MQTT).
 
@@ -67,9 +67,9 @@ As such, this study shares a proven, practical method for developing and deployi
 
 ### Scalability
 
-Scalability is a paramount concern for any robust system, especially in the context of dynamic environments like the Internet of Things (IoT). As client loads increase, whether from a surge in active users, a higher volume of data processing, or more frequent device interaction, a system must demonstrate its ability to cope with these elevated demands. This is not a binary state, but rather a spectrum defined by how effectively computing resources can be added to maintain performance as the "load parameters" (e.g., requests per second, read-to-write ratios, number of concurrent connections) evolve. The challenge often lies not in handling individual operations, but in managing the "fan-out" effect, as seen in the famous Twitter Timeline (KRIKORIAN R. 2012) example where a single tweet from a celebrity needs to be delivered to millions of followers, creating a vastly multiplied write burden, requiring special case for some users that would appen non-ideal in other scenarios. Transforming the multiple write burden in simple cache reads, combining the two methods of writing to each user's timeline and having dedicated caches for users with a large number of followers.
+Scalability is a primary concern for any robust system, especially in the context of dynamic environments like the Internet of Things (IoT). As client loads increase, whether from a surge in active users, a higher volume of data processing, or more frequent device interaction, a system must demonstrate its ability to cope with these elevated demands. This is not a binary state, but rather a spectrum defined by how effectively computing resources can be added to maintain performance as the "load parameters" (e.g., requests per second, read-to-write ratios, number of concurrent connections) evolve. The challenge often lies not in handling individual operations, but in managing the "fan-out" effect, as seen in the famous Twitter Timeline (KRIKORIAN R. 2012) example where a single tweet from a celebrity needs to be delivered to millions of followers, creating a vastly multiplied write burden, requiring special case for some users that would appen non-ideal in other scenarios. Transforming the multiple write burden in simple cache reads, combining the two methods of writing to each user's timeline and having dedicated caches for users with a large number of followers.
 
-To address these escalating demands, systems typically employ two fundamental scaling strategies: vertical and horizontal. Vertical scaling, or "scaling up," involves enhancing the capabilities of a single machine by adding more CPU, RAM, or storage. While straightforward, this approach is severely limited by the physical constraints of hardware and the exponential cost associated with high-end, specialized servers. Crucially, it also introduces a single point of failure, meaning that the entire system's availability hinges on that one machine, which is unacceptable for large-scale, mission-critical applications where continuous operation is paramount.
+To address these escalating demands, systems typically employ two fundamental scaling strategies: vertical and horizontal. Vertical scaling, or "scaling up," involves enhancing the capabilities of a single machine by adding more CPU, RAM, or storage. While straightforward, this approach is severely limited by the physical constraints of hardware and the exponential cost associated with high-end, specialized servers. Crucially, it also introduces a single point of failure, meaning that the entire system's availability hinges on that one machine, which is unacceptable for large-scale, mission-critical applications where continuous operation is a must.
 
 Conversely, horizontal scaling, or "scaling out," offers a more adaptable and resilient solution by distributing the workload across multiple machines within a cluster. This method provides virtually limitless expansion potential; as load increases, more commodity servers can be added to the pool, and a load balancer can distribute incoming requests among them. This not only inherently builds in fault tolerance—the failure of one node does not incapacitate the entire system—but also aligns perfectly with the "pay-as-you-grow" model prevalent in cloud computing. Technologies like Kubernetes exemplify this, dynamically adjusting the number of running application instances (pods) and even the underlying infrastructure nodes to match fluctuating demand, thereby optimizing resource utilization and ensuring continuous performance while managing costs effectively. This can also be referred to as increasing the number of replicas of a deployment or system.
 
@@ -162,7 +162,7 @@ The experiments will specifically focus on scenarios where the system components
 
 #### Qualitative Observations
 
-Beyond raw numbers, the practical implications of implementing and managing such a system are paramount. Our qualitative observations will encompass:
+Beyond raw numbers, the practical implications of implementing and managing such a system are crucial. Our qualitative observations will encompass:
 
 - Ease of setup: How straightforward is it to deploy the Communication Backbone and its dependencies?
 - Configuration overhead: The effort required to configure and integrate new components or devices.
@@ -220,15 +220,15 @@ Although the router routines communicate with simple Inter-Process Communication
 
 A first-look alternative to this would be to simply listen on all gateway macs for the ACK Response. However this is too unreliable, let's take a look:
 
-Firstly, since MQTT load-balancing is offered in a Round-Robin manner, all listeners to a topic share the messages one-by-one.
+First, since MQTT load-balancing is offered in a Round-Robin manner, all listeners to a topic share the messages one-by-one.
 
 ![round-robin](/thesis/static/round-robin.png)
 
-The problem arises from the fact that there is no guarantee that the same router_node that made the action request will be the same one that receives the response message.
+The problem arises from the fact that there is no guarantee that the router_node that made the action request will be the same one that receives the response message.
 
 ![round-robin-issue - sequence diagram](/thesis/static/seq_diagram_http_rpc_issue.png)
 
-Walking though this sequence diagram we see:
+Walking through this sequence diagram we see:
 
 1. The Task Worker establishes a connection to Router 0 and sends the RPC request.
 2. Router 0 publishes the message on the `/gw/GW_MAC/action` topic in MQTT.
@@ -245,7 +245,7 @@ The current system faces a critical scalability limitation due to the tight coup
 
 By considering the limitations in the initially described system, we must analyse both the system requirements and the issues encountered in the baseline backbone.
 
-Firstly we need to resolve the tight coupling of the systems. To resolve this, a message queue should be introduced to decouple request handling from response routing. In this model, task workers publish requests to a dedicated request queue, which any available router can consume. Responses are then directed to a reply queue using a unique correlation ID, ensuring they return to the originating worker—regardless of which router processed the request. This approach eliminates the need for sticky sessions, allows multiple routers to share the load for a single gateway, and provides buffering during traffic surges, preventing message loss. Additionally, queues enable auto-scaling based on backlog depth, further improving elasticity.
+First we need to resolve the tight coupling of the systems. To resolve this, a message queue should be introduced to decouple request handling from response routing. In this model, task workers publish requests to a dedicated request queue, which any available router can consume. Responses are then directed to a reply queue using a unique correlation ID, ensuring they return to the originating worker—regardless of which router processed the request. This approach eliminates the need for sticky sessions, allows multiple routers to share the load for a single gateway, and provides buffering during traffic surges, preventing message loss. Additionally, queues enable auto-scaling based on backlog depth, further improving elasticity.
 
 By adopting this architecture, the system gains true horizontal scalability, fault tolerance, and resilience against burst workloads, while removing the restrictive 1:1 router-gateway dependency. Industry best practices, such as AWS’s recommendation for decoupling microservices with SQS and Microsoft’s asynchronous request-reply pattern, strongly support this design for high-throughput, distributed systems. As such, the brittle system now becomes resilient and scalable (KLEPPMANN, 2017).
 
@@ -342,7 +342,7 @@ func main() {
 
 ## HOMOLOGATION
 
-After the MVP development, tests were developed to guarantee the working and efficiency of the system. Firstly, the baseline system performance numbers were established. All tests were run on a 12-core machine with 16GB of RAM. Resource limits were only applied to the router elements in the architecture, while all other systems (i.e., queues, databases, etc.) had no resource limits. The CPU of the router elements was capped at 100 mCPU per replica. All tests were executed by 50 workers simultaneously to increase the load on the routers, bringing it to a more realistic value. The request timeout was set to 60 seconds; if a reply was not received within this timeout, the reply window was closed, and the request was deemed unsuccessful.
+After the MVP development, tests were employed to guarantee the working and efficiency of the system. Firstly, the baseline system performance numbers were established. All tests were run on a 12-core machine with 16GB of RAM. Resource limits were only applied to the router elements in the architecture, while all other systems (i.e., queues, databases, etc.) had no resource limits. The CPU of the router elements was capped at 100 mCPU per replica. All tests were executed by 50 workers simultaneously to increase the load on the routers, bringing it to a more realistic value. The request timeout was set to 60 seconds; if a reply was not received within this timeout, the reply window was closed, and the request was deemed unsuccessful.
 
 The values of the tests were measured using a telemetry service that asynchronously saves the latency of the RPCs to MongoDB in a different coroutine to reduce the impact of the measurements. The MongoDB instance was running on a separate server to avoid interfering with the experiments.
 
@@ -450,7 +450,7 @@ The entire backbone was developed using modern, well-established technologies su
 
 ### Future Works
 
-Building upon the robust foundation established by this MVP, a significant future work direction would involve further evolving the Custom Communication Backbone into a truly "plug-and-play" solution. This would entail developing a more sophisticated and user-friendly configuration layer that allows for the explicit definition of the message structues and scalability parameters tailored for Kubernetes environments, specifically leveraging KEDA (Kubernetes Event-driven Autoscaling). Such an enhancement would enable users to easily configure the system's autoscaling behavior based on various metrics and event sources, further streamlining deployment and operational management within a cloud-native ecosystem. This would transform the current architecture into a highly adaptable and self-managing system, optimizing resource utilization and performance under fluctuating loads without manual intervention.
+Building upon the robust foundation established by this MVP, a significant future work direction would involve further evolving the Custom Communication Backbone into a truly "plug-and-play" solution. This would entail developing a more sophisticated and user-friendly configuration layer that allows for the explicit definition of the message structures and scalability parameters tailored for Kubernetes environments, specifically leveraging KEDA (Kubernetes Event-driven Autoscaling). Such an enhancement would enable users to easily configure the system's autoscaling behavior based on various metrics and event sources, further streamlining deployment and operational management within a cloud-native ecosystem. This would transform the current architecture into a highly adaptable and self-managing system, optimizing resource utilization and performance under fluctuating loads without manual intervention.
 
 Another compelling area for future work involves enhancing the system's technology agnosticism. While currently leveraging a well-defined set of modern technologies, future iterations could explore abstracting away specific dependencies where feasible. This could involve developing standardized interfaces or adapting to widely adopted protocols that are not tightly coupled to a single vendor or technology stack for components like message queuing or data storage. The goal would be to maximize interoperability and provide greater flexibility for integration into diverse existing infrastructures, allowing organizations to adopt the backbone without significant refactoring of their current technology investments, thereby broadening its applicability and appeal across various enterprise environments.
 
