@@ -12,6 +12,11 @@ Supervisor: Fredy João Valente
 
 The rapid expansion of the Internet of Things (IoT) has necessitated the development of robust and scalable cloud applications to manage the vast influx of data and ensure reliable communication between devices. This work presents a comprehensive study backed by the practical experience gained during the development of large-scale networks with IoT actuators. We begin by exploring the unique challenges posed by IoT ecosystems, including real-time processing implementations and scaling for cloud applications and their difficulties. The study delves into the utilization of in-memory databases, queues and RPC methods to act as shared-memory, creating a vastly scalable distributed system that enables the utilization of traditional scaling methodologies for large MQTT based IoT environments.
 
+**Keywords**: IoT. Distributed Systems. Queues. Cloud.
+
+Palavras-chave: QueijosArtesanais. Rastreabilidade. CadeiadeProdução. Blockchain.
+Hyperledger Fabric. Progressive Web App. PWA.
+
 ## INTRODUCTION
 
 The last decade has witnessed a revolution driven by the Internet of Things (IoT), transforming how we interact with the physical and digital worlds. The proliferation of connected devices, from environmental sensors to industrial actuators, has generated an unprecedented volume of data, opening new frontiers for automation, process optimization, and intelligent decision-making. (MOTTA, R. et al. 2019)
