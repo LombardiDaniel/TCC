@@ -203,6 +203,40 @@ The Communication Layer (Router) is responsible for everything regarding the add
 
 Since the designed IoT devices communicate in Bluetooth Low Energy (BLE), there are intermediate Gateway Devices to "translate" requests to BLE. To reach a target device (ESL), the intermediate gateway hop also needs to be addressed, as such, the Communication Layer is also responsible for identifying the correct gateway that the ESL is currently addressable to. This identification is dynamic and crucial for reliable communication; for any given ESL, there might be multiple gateways within its BLE range. The Communication Layer must intelligently determine the optimal gateway to route the request through, often by selecting the gateway reporting the strongest Received Signal Strength Indicator (RSSI) from the ESL. This ensures the command is sent via the most stable and reliable path, minimizing signal loss and improving command success rates. This also saves us from needing more complex methods for reaching BLE signal stability, which would be too complex considering the dynamic environment inside the construction stores (THALJAOUI, A. et al. 2015).
 
+To manage the RSSI and ESL routing addresses, that link directly to the Gateway Device, we use a simple Load Balanced Subscriber to MQTT status topic that forwards the ESLs BLE advertising packet. This ensures the Gateway Device MAC address is always up-to-date in our routing table in the database.
+
+```go
+// routing_manager.go
+
+func onMsgCallback(mqttPacket models.FullBLEAdvPacket) {
+    currPacket := dbService.GetRoute(mqttPacket.EslMac)
+
+    // Was not yet registered
+	if currPacket == nil {
+		dbService.SetPacket(mqttPacket)
+		return
+	}
+
+	// Signal incresed
+	if mqttPacket.Rssi > currPacket.Rssi {
+		dbService.SetPacket(mqttPacket)
+		return
+	}
+
+	// Signal decreased on same GW
+	if mqttPacket.Rssi < currPacket.Rssi && mqttPacket.GwMac == currPacket.GwMac {
+		dbService.SetPacket(mqttPacket)
+		return
+	}
+}
+
+func main() {
+    topic := "/gw/+/status"
+    mqtt.SetCallback("$share/routing-manager-group/", onMsgCallback)
+    mqtt.Start() // Hangs
+}
+```
+
 This Communication Layer inherently represents the primary scalability challenge for the entire system. While the task_queue and task_workers can scale horizontally with relative ease by adding more instances, the Communication Layer faces unique challenges in maintaining device connectivity and command routing efficiency across a massive and dynamic network of IoT gateways and devices. In traditional architectures, the load-balancing done by MQTT would not allow a system to simply scale horizontally, as the nodes that receive the RPC request may not be the same ones that receive the response from the device. This "misrouting" of replies would lead to responses being discarded as unrelated or "junk messages," effectively breaking the critical request-reply pattern essential for reliable actuator control and feedback. Our Communication Layer's specialized logic directly addresses this limitation by ensuring response correlation and proper routing, which is fundamental to overcoming this scalability hurdle.
 
 Any bottleneck or inefficiency within this intricate layer can propagate throughout the entire system, severely hindering the overall scalability, responsiveness, and reliability of the large-scale IoT application.
