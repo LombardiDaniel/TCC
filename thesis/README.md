@@ -12,10 +12,7 @@ Supervisor: Fredy João Valente
 
 The rapid expansion of the Internet of Things (IoT) has necessitated the development of robust and scalable cloud applications to manage the vast influx of data and ensure reliable communication between devices. This work presents a comprehensive study backed by the practical experience gained during the development of large-scale networks with IoT actuators. We begin by exploring the unique challenges posed by IoT ecosystems, including real-time processing implementations and scaling for cloud applications and their difficulties. The study delves into the utilization of in-memory databases, queues and RPC methods to act as shared-memory, creating a vastly scalable distributed system that enables the utilization of traditional scaling methodologies for large MQTT based IoT environments.
 
-**Keywords**: IoT. Distributed Systems. Queues. Cloud.
-
-Palavras-chave: QueijosArtesanais. Rastreabilidade. CadeiadeProdução. Blockchain.
-Hyperledger Fabric. Progressive Web App. PWA.
+**Keywords**: IoT, Distributed Systems, Publish/Subscribe, Distributed Architecture, RPC, MQTT, ESL, Signal Strength-based routing.
 
 ## INTRODUCTION
 
@@ -206,8 +203,7 @@ Since the designed IoT devices communicate in Bluetooth Low Energy (BLE), there 
 To manage the RSSI and ESL routing addresses, that link directly to the Gateway Device, we use a simple Load Balanced Subscriber to MQTT status topic that forwards the ESLs BLE advertising packet. This ensures the Gateway Device MAC address is always up-to-date in our routing table in the database.
 
 ```go
-// routing_manager.go
-
+// routing_manager
 func onMsgCallback(mqttPacket models.FullBLEAdvPacket) {
     currPacket := dbService.GetRoute(mqttPacket.EslMac)
 
@@ -364,7 +360,6 @@ The pseudocode for the bck router:
 
 ```go
 // bck_router
-
 func onMsgCallback(rep models.RoutingReply) {
     correlationId := sharedMemService.RepKey(rep.EslMac)
 	messagingService.Reply(correlationId, rep)
