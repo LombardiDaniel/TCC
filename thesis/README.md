@@ -103,7 +103,7 @@ Message Queuing Telemetry Transport (MQTT) is a lightweight, publish-subscribe m
 
 ### Remote Procedure Call (RPC)
 
-A Remote Procedure Call (RPC) is a proposal to allow programs to call procedures located on other machines, with the message passing part of it not being visible to the programmer. The main idea is that a process that may be complex is called externally from the main machine, allowing the programmer to not care about the address spaces, pameters and results marshalling. In the context of IoT, a common use case for an RPC is for when an actuator is called to execute a task. The client (programmers code) calls the server (IoT system) to toggle a light switch, and then replying if the task was successful or not.
+A Remote Procedure Call (RPC) is a proposal to allow programs to call procedures located on other machines, with the message passing part of it not being visible to the programmer. The main idea is that a process that may be complex is called externally from the main machine, allowing the programmer to not care about the address spaces, parameters and results marshalling. In the context of IoT, a common use case for an RPC is for when an actuator is called to execute a task. The client (programmers code) calls the server (IoT system) to toggle a light switch, and then replying if the task was successful or not.
 
 ![rpc](/thesis/static/rpc.png)
 
