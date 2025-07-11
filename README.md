@@ -46,6 +46,8 @@ docker run -ti --network tcc_default eclipse-mosquitto:1.6.15 ash
 mosquitto_pub -h mqtt -t /gw/GW_MAC/response -m {\"deviceMac\":\"000000000001\",\"ack\":true} && mosquitto_pub -h mqtt -t /gw/GW_MAC/response -m {\"deviceMac\":\"000000000002\",\"ack\":true}
 ```
 
+To just run a simple experiment, configure the [docker-compose.yml](/docker-compose.yml) file with appropriate parameters and run it. Remember to uncomment mongodb if you wish to run it locally.
+
 ```sh
 docker compose up --build -d && docker compose logs -t -f ; docker compose down
 ```
